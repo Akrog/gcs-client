@@ -46,7 +46,7 @@ clean-test:
 	rm -fr htmlcov/
 
 lint:
-	flake8 gcs-client tests
+	flake8 gcs_client tests
 
 test:
 	python setup.py test
@@ -55,15 +55,15 @@ test-all:
 	tox
 
 coverage:
-	coverage run --source gcs-client setup.py test
+	coverage run --source gcs_client setup.py test
 	coverage report -m
 	coverage html
 	$(BROWSER) htmlcov/index.html
 
 docs:
-	rm -f docs/gcs-client.rst
+	rm -f docs/gcs_client.rst
 	rm -f docs/modules.rst
-	sphinx-apidoc -o docs/ gcs-client
+	sphinx-apidoc -o docs/ gcs_client
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 	$(BROWSER) docs/_build/html/index.html

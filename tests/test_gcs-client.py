@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-test_gcs-client
+test_gcs_client
 ----------------------------------
 
-Tests for `gcs-client` module.
+Tests for `gcs_client` module.
 """
 
 import unittest

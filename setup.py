@@ -22,9 +22,11 @@ test_requirements = [
     # TODO: put package test requirements here
 ]
 
+import gcs_client
+
 setup(
     name='gcs-client',
-    version='0.0.1',
+    version=gcs_client.__version__,
     description="Google Cloud Storage Python client",
     long_description=readme + '\n\n' + history,
     author="Gorka Eguileor",
@@ -33,8 +35,7 @@ setup(
     packages=[
         'gcs_client',
     ],
-    package_dir={'gcs_client':
-                 'gcs_client'},
+    package_dir={'gcs_client': 'gcs_client', },
     include_package_data=True,
     install_requires=requirements,
     license="Apache License 2.0",
