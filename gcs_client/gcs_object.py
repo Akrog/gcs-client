@@ -38,6 +38,7 @@ class Object(common.Fillable):
         req = self._service.objects().delete(
             bucket=self.bucket,
             object=self.name,
+            generation=generation or self.generation,
             ifGenerationMatch=if_generation_match,
             ifGenerationNotMatch=if_generation_not_match,
             ifMetagenerationMatch=if_metageneration_match,
