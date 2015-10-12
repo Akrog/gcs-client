@@ -42,10 +42,6 @@ class GCS(object):
         self._service = discovery.build('storage', self.api_version,
                                         credentials=self._credentials)
 
-    def _has_all_required_attributes(self):
-        return all(getattr(self, attribute, None)
-                   for attribute in self._required_attributes)
-
 
 class Fillable(GCS):
     def __init__(self, credentials):
@@ -59,7 +55,7 @@ class Fillable(GCS):
         return obj
 
     def __getattr__(self, name):
-        if self._data_was_retrieved or not self._has_all_required_attributes():
+        if self._data_was_retrieved:
             raise AttributeError
 
         data = self._get_data()
@@ -67,13 +63,13 @@ class Fillable(GCS):
         return getattr(self, name)
 
     def _fill_with_data(self, data):
-        self._data_was_retrieved = True
         for k, v in data.items():
             if hasattr(self, k) and getattr(self, k):
                 continue
             if isinstance(v, dict) and len(v) == 1:
                 v = v.values()[0]
             setattr(self, k, v)
+        self._data_was_retrieved = True
 
     def _get_data(self):
         raise NotImplementedError
