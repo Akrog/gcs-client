@@ -24,8 +24,6 @@ class GCS(object):
     _required_attributes = ['credentials']
 
     def __init__(self, credentials):
-        self._service = None
-        self._credentials = None
         self.credentials = credentials
 
     @property
@@ -34,17 +32,19 @@ class GCS(object):
 
     @credentials.setter
     def credentials(self, value):
-        old_credentials = self.credentials
-        self._credentials = value
-        if not value or value == old_credentials:
+        if value == getattr(self, '_credentials', not value):
             return
 
+        self._credentials = value
         self._service = discovery.build('storage', self.api_version,
                                         credentials=self._credentials)
 
 
 class Fillable(GCS):
     def __init__(self, credentials):
+        # We need to set a default value for _credentials, otherwise we would
+        # end up calling __get_attr__ on GCS base class
+        self._credentials = not credentials
         super(Fillable, self).__init__(credentials)
         self._data_retrieved = False
 
