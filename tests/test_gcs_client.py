@@ -10,7 +10,7 @@ Tests for `gcs_client` module.
 
 import unittest
 
-from gcs_client import gcs_client
+import gcs_client
 
 
 class TestGcs_client(unittest.TestCase):
