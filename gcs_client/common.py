@@ -4,6 +4,7 @@ from __future__ import absolute_import
 from functools import wraps
 
 from apiclient import discovery
+from apiclient import errors
 
 
 def is_complete(f):
@@ -47,6 +48,7 @@ class Fillable(GCS):
         self._credentials = not credentials
         super(Fillable, self).__init__(credentials)
         self._data_retrieved = False
+        self._exists = None
 
     @classmethod
     def obj_from_data(cls, data, credentials=None):
@@ -55,10 +57,19 @@ class Fillable(GCS):
         return obj
 
     def __getattr__(self, name):
-        if self._data_retrieved:
+        if self._data_retrieved or self._exists is False:
             raise AttributeError
 
-        data = self._get_data()
+        try:
+            data = self._get_data()
+            self._exists = True
+        except errors.HttpError as exc:
+            if exc.resp.status == 404:
+                self._exists = False
+                raise AttributeError
+            else:
+                raise
+
         self._fill_with_data(data)
         return getattr(self, name)
 
