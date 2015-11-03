@@ -47,3 +47,7 @@ class Bucket(common.Fillable):
                if_metageneration_not_match=None):
         req = self._service.buckets().delete(bucket=self.name)
         req.execute()
+
+    def open(self, name, mode='r', generation=None):
+        obj = gcs_object.Object(self.name, name, generation, self.credentials)
+        return obj.open(mode, generation)
