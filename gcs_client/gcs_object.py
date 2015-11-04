@@ -83,6 +83,8 @@ class GCSObjFile(object):
         self._service = service
         self.size = size
         self._chunksize = chunksize or DEFAULT_BLOCK_SIZE
+        assert self._chunksize % BLOCK_MULTIPLE == 0, \
+            'chunksize must be multiple of %s' % BLOCK_MULTIPLE
 
         req = self._service.objects().get_media(bucket=self.bucket,
                                                 object=self.name,
@@ -137,6 +139,9 @@ class GCSObjResumableUpload(object):
     URL = 'https://www.googleapis.com/upload/storage/v1/b/%s/o'
 
     def __init__(self, bucket, name, credentials, chunksize=None, size=None):
+        self._chunksize = chunksize or DEFAULT_BLOCK_SIZE
+        assert self._chunksize % BLOCK_MULTIPLE == 0, \
+            'chunksize must be multiple of %s' % BLOCK_MULTIPLE
         self.name = name
         self.bucket = bucket
         initial_url = self.URL % bucket
@@ -154,7 +159,6 @@ class GCSObjResumableUpload(object):
                           '(status=%s): %s' %
                           (name, bucket, r.status_code, r.content))
         self._location = r.headers['Location']
-        self._chunksize = chunksize or DEFAULT_BLOCK_SIZE
         self._credentials = credentials
         self._buffer = _Buffer()
 
