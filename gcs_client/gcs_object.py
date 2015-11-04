@@ -82,7 +82,7 @@ class GCSObjFile(object):
         self._transferer = None
         self._service = service
         self.size = size
-        self._chunksize = chunksize or (1024 * 1024)
+        self._chunksize = chunksize or DEFAULT_BLOCK_SIZE
 
         req = self._service.objects().get_media(bucket=self.bucket,
                                                 object=self.name,
