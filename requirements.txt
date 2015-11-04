@@ -1,2 +1,2 @@
 google-api-python-client==1.4.2
-pycrypto
+requests[security]
