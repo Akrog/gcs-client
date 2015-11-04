@@ -36,6 +36,13 @@ class Object(common.Fillable):
                                           generation=self.generation)
         return req.execute()
 
+    def exists(self):
+        try:
+            self.size
+        except AttributeError:
+            return False
+        return True
+
     @common.is_complete
     def delete(self, generation=None, if_generation_match=None,
                if_generation_not_match=None, if_metageneration_match=None,
@@ -55,10 +62,15 @@ class Object(common.Fillable):
     def open(self, mode, generation=None):
         if mode not in ('r', 'w'):
             raise IOError('Only r or w modes supported')
-        if mode == 'r':
-            return GCSObjFile(self.bucket, self.name, self._service,
-                              self.size, generation or self.generation)
-        return GCSObjResumableUpload(self.bucket, self.name, self._credentials)
+        if mode == 'w':
+            return GCSObjResumableUpload(self.bucket, self.name,
+                                         self._credentials)
+
+        if not self.exists():
+            raise IOError('Object %s does not exist in bucket %s' %
+                          (self.name, self.bucket))
+        return GCSObjFile(self.bucket, self.name, self._service, self.size,
+                          generation or self.generation)
 
 
 class GCSObjFile(object):
