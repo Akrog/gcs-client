@@ -198,12 +198,10 @@ class RetryParams(object):
             default.__init__(*args, **kwargs)
 
 
-DEFAULT_RETRY_CODES = (httplib.REQUEST_TIMEOUT,
-                       httplib.INTERNAL_SERVER_ERROR,
-                       httplib.BAD_GATEWAY,
-                       httplib.SERVICE_UNAVAILABLE,
-                       httplib.GATEWAY_TIMEOUT,
-                       429)  # Too many requests
+# Generate default codes to retry from transient HTTP errors
+DEFAULT_RETRY_CODES = tuple(
+    code for code, (cls_name, cls) in gcs_errors.http_errors.items()
+    if cls is gcs_errors.Transient)
 
 
 def retry(param='_retry_params', error_codes=DEFAULT_RETRY_CODES):
