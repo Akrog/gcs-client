@@ -166,7 +166,7 @@ class GCSObjResumableUpload(object):
                    'Authorization': 'Bearer ' + auth_token,
                    'Content-type': 'application/octet-stream'}
         r = requests.post(initial_url, params=params, headers=headers)
-        self.closed = r.status_code != 200
+        self.closed = r.status_code != requests.codes.ok
         if self.closed:
             raise errors.create_http_exception(
                 r.status_code, 'Could not open object %s in buckets %s: %s' %
@@ -220,9 +220,9 @@ class GCSObjResumableUpload(object):
         r = requests.put(self._location, data=data, headers=headers)
 
         if size == '*':
-            expected = 308
+            expected = requests.codes.resume_incomplete
         else:
-            expected = 200
+            expected = requests.codes.ok
 
         if r.status_code != expected:
             raise errors.create_http_exception(
