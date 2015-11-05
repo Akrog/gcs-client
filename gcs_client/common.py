@@ -200,7 +200,8 @@ DEFAULT_RETRY_CODES = (httplib.REQUEST_TIMEOUT,
                        httplib.INTERNAL_SERVER_ERROR,
                        httplib.BAD_GATEWAY,
                        httplib.SERVICE_UNAVAILABLE,
-                       httplib.GATEWAY_TIMEOUT)
+                       httplib.GATEWAY_TIMEOUT,
+                       429)  # Too many requests
 
 
 def retry(param='_retry_params', error_codes=DEFAULT_RETRY_CODES):
