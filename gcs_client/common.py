@@ -203,18 +203,61 @@ DEFAULT_RETRY_CODES = (httplib.REQUEST_TIMEOUT,
                        httplib.GATEWAY_TIMEOUT)
 
 
-def retry(param, error_codes=DEFAULT_RETRY_CODES):
+def retry(param='_retry_params', error_codes=DEFAULT_RETRY_CODES):
+    """Truncated Exponential Backoff decorator.
+
+    There are multiple ways to use this decorator:
+
+    @retry
+    def my_func(self):
+        In this case we will try to use `self._retry_params` and if that's not
+        available we'll use default retry configuration and retry on
+        DEFAULT_RETRY_CODES status codes.
+
+    @retry('_retry_cfg')
+    def my_func(self):
+        In this case we will try to use `self._retry_cfg` and if that's
+        not available we'll use default retry configuration and retry on
+        DEFAULT_RETRY_CODES status codes.
+
+    @retry(RetryParams(5, 1, 32, 2, False))
+    def my_func(self):
+        In this case we will use a specific retry configuration and retry on
+        DEFAULT_RETRY_CODES status codes.
+
+    @retry('_retry_cfg', [408, 504])
+    def my_func(self):
+        In this case we will try to use `self._retry_cfg` and if that's
+        not available we'll use default retry configuration and retry only on
+        timeout status codes.
+
+    @retry(RetryParams(5, 1, 32, 2, False), [408, 504])
+    def my_func(self):
+        In this case we will use a specific retry configuration and retry only
+        on timeout status codes.
+
+    @retry(error_codes=[408, 504])
+    def my_func(self):
+        In this case we will try to use `self._retry_params` and if that's not
+        available we'll use default retry configuration and retry only on
+        timeout status codes.
+
+    If we pass None as the retry parameter or the value of the attribute on the
+    instance is None we will not do any retries.
+    """
     def _retry(f):
         @wraps(f)
         def wrapped(self, *args, **kwargs):
-            if isinstance(param, RetryParams):
+            # If retry configuration is none or a RetryParams instance, use it
+            if isinstance(param, (types.NoneType, RetryParams)):
                 retry_params = param
+            # If it's an attribute name try to retrieve it
             else:
                 retry_params = getattr(self, param, RetryParams.get_default())
             delay = 0
             random_delay = 0
 
-            n = 0
+            n = 0  # Retry number
             while True:
                 try:
                     result = f(self, *args, **kwargs)
