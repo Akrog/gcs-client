@@ -5,9 +5,10 @@ import collections
 import io
 
 from apiclient import http as gcs_http
+import requests
 
 from gcs_client import common
-import requests
+from gcs_client import errors
 
 
 BLOCK_MULTIPLE = 256 * 1024
@@ -142,29 +143,35 @@ class GCSObjFile(object):
 class GCSObjResumableUpload(object):
     URL = 'https://www.googleapis.com/upload/storage/v1/b/%s/o'
 
-    def __init__(self, bucket, name, credentials, chunksize=None, size=None):
+    def __init__(self, bucket, name, credentials, chunksize=None, size=None,
+                 retry_params=None):
         self._chunksize = chunksize or DEFAULT_BLOCK_SIZE
         assert self._chunksize % BLOCK_MULTIPLE == 0, \
             'chunksize must be multiple of %s' % BLOCK_MULTIPLE
         self.name = name
         self.bucket = bucket
-        initial_url = self.URL % bucket
-        params = {'uploadType': 'resumable', 'name': name}
-        auth_token = credentials.get_access_token().access_token
+        self.size = size or 0
+        self._written = 0
+        self._credentials = credentials
+        self._buffer = _Buffer()
+        self._retry_params = retry_params
+        self._open()
+
+    @common.retry
+    def _open(self):
+        initial_url = self.URL % self.bucket
+        params = {'uploadType': 'resumable', 'name': self.name}
+        auth_token = self._credentials.get_access_token().access_token
         headers = {'x-goog-resumable': 'start',
                    'Authorization': 'Bearer ' + auth_token,
                    'Content-type': 'application/octet-stream'}
         r = requests.post(initial_url, params=params, headers=headers)
-        self.size = size or 0
-        self._written = 0
         self.closed = r.status_code != 200
         if self.closed:
-            raise IOError('Could not open object %s in buckets %s: '
-                          '(status=%s): %s' %
-                          (name, bucket, r.status_code, r.content))
+            raise errors.create_http_exception(
+                r.status_code, 'Could not open object %s in buckets %s: %s' %
+                (self.name, self.bucket, r.status_code, r.content))
         self._location = r.headers['Location']
-        self._credentials = credentials
-        self._buffer = _Buffer()
 
     def tell(self):
         return self.size
@@ -193,6 +200,7 @@ class GCSObjResumableUpload(object):
             self._send_data(self._buffer.read(), finalize=True)
             self._closed = True
 
+    @common.retry
     def _send_data(self, data, finalize=False):
         if not (data or finalize):
             return
@@ -217,9 +225,10 @@ class GCSObjResumableUpload(object):
             expected = 200
 
         if r.status_code != expected:
-            raise IOError('Error writting to object %s in buckets %s: '
-                          '(status=%s): %s' %
-                          (self.name, self.bucket, r.status_code, r.content))
+            raise errors.create_http_exception(
+                r.status_code,
+                'Error writting to object %s in buckets %s: %s' %
+                (self.name, self.bucket, r.status_code, r.content))
         self._written += len(data)
 
     def __enter__(self):
