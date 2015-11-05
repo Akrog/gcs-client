@@ -12,14 +12,14 @@ class Project(common.GCS):
 
     _required_attributes = common.GCS._required_attributes + ['project_id']
 
-    def __init__(self, project_id, credentials=None):
+    def __init__(self, project_id, credentials=None, retry_params=None):
         """Initialize a Project object.
 
         :param project_id: Project id as listed in Google's project management
                            https://console.developers.google.com/project.
         :param credentials: A credentials object to authorize the connection.
         """
-        super(Project, self).__init__(credentials)
+        super(Project, self).__init__(credentials, retry_params)
         self.project_id = project_id
 
     @property

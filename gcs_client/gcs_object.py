@@ -20,13 +20,13 @@ class Object(common.Fillable):
     _required_attributes = common.GCS._required_attributes + ['name', 'bucket']
 
     def __init__(self, bucket=None, name=None, generation=None,
-                 credentials=None):
+                 credentials=None, retry_params=None):
         """Initialize an Object object.
 
         :param name: Name of the bucket to use.
         :param credentials: A credentials object to authorize the connection.
         """
-        super(Object, self).__init__(credentials)
+        super(Object, self).__init__(credentials, retry_params)
         self.name = name
         self.bucket = bucket
         self.generation = generation

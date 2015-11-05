@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
-import collections
 from functools import wraps
 import httplib
 import math
 import random
 import time
+import types
 
 from apiclient import discovery
 from apiclient import errors
@@ -29,8 +29,35 @@ class GCS(object):
 
     _required_attributes = ['credentials']
 
-    def __init__(self, credentials):
+    def __init__(self, credentials, retry_params=None):
+        """Base GCS initialization.
+
+        :param credentials: credentials to use for accessing GCS
+        :type credentials: GCSCredential
+        :param retry_params: retry configuration used for communications with
+                             GCS.  If not specified RetryParams.getdefault()
+                             will be used.
+        :type retry_params: RetryParams
+        :returns: None
+        """
         self.credentials = credentials
+        self._retry_params = retry_params or RetryParams.get_default()
+
+    @property
+    def retry_params(self):
+        """Get retry configuration used by this instance for accessing GCS."""
+        return self._retry_params
+
+    @retry_params.setter
+    def retry_params(self, retry_params):
+        """Set retry configuration used by this instance for accessing GCS.
+
+        :param retry_params: retry configuration used for communications with
+                             GCS.  If None is passed retries will be disabled.
+        :type retry_params: RetryParams or NoneType
+        """
+        assert isinstance(retry_params, (types.NoneType, RetryParams))
+        self._retry_params = retry_params
 
     @property
     def credentials(self):
@@ -47,11 +74,11 @@ class GCS(object):
 
 
 class Fillable(GCS):
-    def __init__(self, credentials):
+    def __init__(self, credentials, retry_params=None):
         # We need to set a default value for _credentials, otherwise we would
         # end up calling __get_attr__ on GCS base class
         self._credentials = not credentials
-        super(Fillable, self).__init__(credentials)
+        super(Fillable, self).__init__(credentials, retry_params)
         self._data_retrieved = False
         self._exists = None
 
@@ -91,12 +118,84 @@ class Fillable(GCS):
         raise NotImplementedError
 
 
-RetryParams = collections.namedtuple(
-    'RetryParams',
-    ('max_retries', 'initial_delay', 'max_backoff', 'backoff_factor',
-     'randomize'))
+class RetryParams(object):
+    """Truncated Exponential Backoff configuration class.
 
-DEFAULT_RETRY_PARAMS = RetryParams(5, 1, 32, 2, True)
+    This configuration is used to provide truncated exponential backoff retries
+    for communications.
+
+    The algorithm requires 4 arguments: max retries, initial delay, max backoff
+    wait time and backoff factor.
+
+    As long as we have pending retries we will wait
+        (backoff_factor ^ n-1) * initial delay
+    Where n is the number of retry.
+    As long as this wait is not greater than max backoff wait time, if it is
+    max backoff time wait will be used.
+
+    We'll add a random wait time to this delay to help avoid cases where many
+    clients get synchronized by some situation and all retry at once, sending
+    requests in synchronized waves.
+
+    For example with default values of max_retries=5, initial_delay=1,
+    max_backoff=32 and backoff_factor=2
+
+    1st failure: 1 second + random delay [ (2^(1-1)) * 1 ]
+    2nd failure: 2 seconds + random delay [ (2^(2-1)) * 1 ]
+    3rd failure: 4 seconds + random delay [ (2^(3-1)) * 1 ]
+    4th failure: 8 seconds + random delay [ (2^(4-1)) * 1 ]
+    5th failure: 16 seconds + random delay [ (2^(5-1)) * 1 ]
+    6th failure: Fail operation
+    """
+
+    def __init__(self, max_retries=5, initial_delay=1, max_backoff=32,
+                 backoff_factor=2, randomize=True):
+        """Initialize retry configuration.
+
+        :param max_retries: Maximum number of retries before giving up.
+        :type max_retries: int
+        :param initial_delay: Seconds to wait for the first retry.
+        :type initial_delay: int or float
+        :param max_backoff: Maximum number of seconds to wait between retries.
+        :type max_backoff: int or float
+        :param backoff_factor: Base to use for the power used to calculate the
+                               delay for the backoff.
+        :type backoff_factor: int or float
+        :param randomize: Whether to use randomization of the delay time to
+                          avoid synchronized waves.
+        :type randomize: bool
+        """
+        self.max_retries = max_retries
+        self.initial_delay = initial_delay
+        self.max_backoff = max_backoff
+        self.backoff_factor = backoff_factor
+        self.randomize = randomize
+
+    @classmethod
+    def get_default(cls):
+        """Return default configuration (simpleton patern)."""
+        if not hasattr(cls, 'default'):
+            cls.default = cls()
+        return cls.default
+
+    @classmethod
+    def set_default(cls, *args, **kwargs):
+        """Set default retry configuration.
+
+        Methods acepts a RetryParams instance or the same arguments as the
+        __init__ method.
+        """
+        default = cls.get_default()
+        # For RetryParams argument copy dictionary to default instance so all
+        # references to the default configuration will have new values.
+        if len(args) == 1 and isinstance(args[0], RetryParams):
+            default.__dict__.update(args[0].__dict__)
+
+        # For individual arguments call __init__ method on default instance
+        else:
+            default.__init__(*args, **kwargs)
+
+
 DEFAULT_RETRY_CODES = (httplib.REQUEST_TIMEOUT,
                        httplib.INTERNAL_SERVER_ERROR,
                        httplib.BAD_GATEWAY,
@@ -111,7 +210,7 @@ def retry(param, error_codes=DEFAULT_RETRY_CODES):
             if isinstance(param, RetryParams):
                 retry_params = param
             else:
-                retry_params = getattr(self, param, DEFAULT_RETRY_PARAMS)
+                retry_params = getattr(self, param, RetryParams.get_default())
             delay = 0
             random_delay = 0
 
@@ -121,7 +220,7 @@ def retry(param, error_codes=DEFAULT_RETRY_CODES):
                     result = f(self, *args, **kwargs)
                     return result
                 except errors.HttpError as exc:
-                    if (n >= retry_params.max_retries or
+                    if (not retry_params or n >= retry_params.max_retries or
                             int(exc.resp['status']) not in error_codes):
                         raise exc
                 n += 1

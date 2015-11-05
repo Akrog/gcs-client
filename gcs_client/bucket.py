@@ -11,13 +11,13 @@ class Bucket(common.Fillable):
 
     _required_attributes = common.GCS._required_attributes + ['name']
 
-    def __init__(self, name=None, credentials=None):
+    def __init__(self, name=None, credentials=None, retry_params=None):
         """Initialize a Bucket object.
 
         :param name: Name of the bucket to use.
         :param credentials: A credentials object to authorize the connection.
         """
-        super(Bucket, self).__init__(credentials)
+        super(Bucket, self).__init__(credentials, retry_params)
         self.name = name
 
     @common.retry
