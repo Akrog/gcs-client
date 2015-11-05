@@ -31,8 +31,8 @@ class Project(common.GCS):
     @common.is_complete
     @common.retry
     @common.convert_exception
-    def list_buckets(self, fields_to_return=None, max_results=None,
-                     projection=gcs_projection.SIMPLE):
+    def list(self, fields_to_return=None, max_results=None,
+             projection=gcs_projection.SIMPLE):
         buckets = self._service.buckets()
 
         req = buckets.list(project=self.project_id,
