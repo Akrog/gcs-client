@@ -84,8 +84,8 @@ class Fillable(GCS):
         self._exists = None
 
     @classmethod
-    def obj_from_data(cls, data, credentials=None):
-        obj = cls(credentials=credentials)
+    def obj_from_data(cls, data, credentials=None, retry_params=None):
+        obj = cls(credentials=credentials, retry_params=retry_params)
         obj._fill_with_data(data)
         return obj
 

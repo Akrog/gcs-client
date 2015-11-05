@@ -43,7 +43,8 @@ class Project(common.GCS):
         while req:
             resp = req.execute()
             items = map(
-                lambda b: bucket.Bucket.obj_from_data(b, self.credentials),
+                lambda b: bucket.Bucket.obj_from_data(b, self.credentials,
+                                                      self.retry_params),
                 resp.get('items', []))
             bucket_list.extend(items)
             req = buckets.list_next(req, resp)

@@ -40,7 +40,8 @@ class Bucket(common.Fillable):
         while req:
             resp = req.execute()
             items = map(
-                lambda b: gcs_object.Object.obj_from_data(b, self.credentials),
+                lambda b: gcs_object.Object.obj_from_data(b, self.credentials,
+                                                          self.retry_params),
                 resp.get('items', []))
             objects_list.extend(items)
             req = objs.list_next(req, resp)
