@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
 
+import collections
 from functools import wraps
+import httplib
+import math
+import random
+import time
 
 from apiclient import discovery
 from apiclient import errors
@@ -84,3 +89,57 @@ class Fillable(GCS):
 
     def _get_data(self):
         raise NotImplementedError
+
+
+RetryParams = collections.namedtuple(
+    'RetryParams',
+    ('max_retries', 'initial_delay', 'max_backoff', 'backoff_factor',
+     'randomize'))
+
+DEFAULT_RETRY_PARAMS = RetryParams(5, 1, 32, 2, True)
+DEFAULT_RETRY_CODES = (httplib.REQUEST_TIMEOUT,
+                       httplib.INTERNAL_SERVER_ERROR,
+                       httplib.BAD_GATEWAY,
+                       httplib.SERVICE_UNAVAILABLE,
+                       httplib.GATEWAY_TIMEOUT)
+
+
+def retry(param, error_codes=DEFAULT_RETRY_CODES):
+    def _retry(f):
+        @wraps(f)
+        def wrapped(self, *args, **kwargs):
+            if isinstance(param, RetryParams):
+                retry_params = param
+            else:
+                retry_params = getattr(self, param, DEFAULT_RETRY_PARAMS)
+            delay = 0
+            random_delay = 0
+
+            n = 0
+            while True:
+                try:
+                    result = f(self, *args, **kwargs)
+                    return result
+                except errors.HttpError as exc:
+                    if (n >= retry_params.max_retries or
+                            int(exc.resp['status']) not in error_codes):
+                        raise exc
+                n += 1
+                # If we haven't reached maximum backoff yet calculate new delay
+                if delay < retry_params.max_backoff:
+                    backoff = (math.pow(retry_params.backoff_factor, n-1)
+                               * retry_params.initial_delay)
+                    delay = min(retry_params.max_backoff, backoff)
+
+                if retry_params.randomize:
+                    random_delay = random.random() * retry_params.initial_delay
+                time.sleep(delay + random_delay)
+
+        return wrapped
+
+    # If no argument has been used
+    if callable(param):
+        f, param = param, '_retry_params'
+        return _retry(f)
+
+    return _retry

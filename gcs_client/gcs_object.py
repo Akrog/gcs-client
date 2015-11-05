@@ -31,6 +31,7 @@ class Object(common.Fillable):
         self.bucket = bucket
         self.generation = generation
 
+    @common.retry
     def _get_data(self):
         req = self._service.objects().get(bucket=self.bucket, object=self.name,
                                           generation=self.generation)
@@ -44,6 +45,7 @@ class Object(common.Fillable):
         return True
 
     @common.is_complete
+    @common.retry
     def delete(self, generation=None, if_generation_match=None,
                if_generation_not_match=None, if_metageneration_match=None,
                if_metageneration_not_match=None):

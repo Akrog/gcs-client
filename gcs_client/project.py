@@ -29,6 +29,7 @@ class Project(common.GCS):
         return self.project_id + '.appspot.com'
 
     @common.is_complete
+    @common.retry
     def list_buckets(self, fields_to_return=None, max_results=None,
                      projection=gcs_projection.SIMPLE):
         buckets = self._service.buckets()
@@ -49,6 +50,7 @@ class Project(common.GCS):
         return bucket_list
 
     @common.is_complete
+    @common.retry
     def create_bucket(self, name, location='US',
                       storage_class=storage_class.NEARLINE,
                       predefined_acl=None,
