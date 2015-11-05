@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 
 from functools import wraps
-import httplib
 import math
 import random
 import time
