@@ -56,5 +56,6 @@ class Bucket(common.Fillable):
         req.execute()
 
     def open(self, name, mode='r', generation=None):
-        obj = gcs_object.Object(self.name, name, generation, self.credentials)
+        obj = gcs_object.Object(self.name, name, generation, self.credentials,
+                                self.retry_params)
         return obj.open(mode, generation)
