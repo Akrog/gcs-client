@@ -30,6 +30,7 @@ class Project(common.GCS):
 
     @common.is_complete
     @common.retry
+    @common.convert_exception
     def list_buckets(self, fields_to_return=None, max_results=None,
                      projection=gcs_projection.SIMPLE):
         buckets = self._service.buckets()
@@ -51,6 +52,7 @@ class Project(common.GCS):
 
     @common.is_complete
     @common.retry
+    @common.convert_exception
     def create_bucket(self, name, location='US',
                       storage_class=storage_class.NEARLINE,
                       predefined_acl=None,

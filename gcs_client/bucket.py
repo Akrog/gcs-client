@@ -21,12 +21,14 @@ class Bucket(common.Fillable):
         self.name = name
 
     @common.retry
+    @common.convert_exception
     def _get_data(self):
         req = self._service.buckets().get(bucket=self.name)
         return req.execute()
 
     @common.is_complete
     @common.retry
+    @common.convert_exception
     def list(self, prefix=None, maxResults=None, versions=False,
              delimiter=None, projection=gcs_projection.SIMPLE):
         objs = self._service.objects()
@@ -46,6 +48,7 @@ class Bucket(common.Fillable):
         return objects_list
 
     @common.retry
+    @common.convert_exception
     def delete(self, if_metageneration_math=None,
                if_metageneration_not_match=None):
         req = self._service.buckets().delete(bucket=self.name)

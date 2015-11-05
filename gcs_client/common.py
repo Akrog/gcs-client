@@ -11,6 +11,8 @@ import types
 from apiclient import discovery
 from apiclient import errors
 
+from gcs_client import errors as gcs_errors
+
 
 def is_complete(f):
     @wraps(f)
@@ -263,9 +265,9 @@ def retry(param='_retry_params', error_codes=DEFAULT_RETRY_CODES):
                 try:
                     result = f(self, *args, **kwargs)
                     return result
-                except errors.HttpError as exc:
+                except gcs_errors.Http as exc:
                     if (not retry_params or n >= retry_params.max_retries or
-                            int(exc.resp['status']) not in error_codes):
+                            exc.code not in error_codes):
                         raise exc
                 n += 1
                 # If we haven't reached maximum backoff yet calculate new delay
@@ -286,3 +288,14 @@ def retry(param='_retry_params', error_codes=DEFAULT_RETRY_CODES):
         return _retry(f)
 
     return _retry
+
+
+def convert_exception(f):
+    """Decorator to convert from Google's apiclient Http exceptions to ours."""
+    @wraps(f)
+    def wrapped(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except errors.HttpError as exc:
+            raise gcs_errors.create_http_exception(exc.resp['status'], exc)
+    return wrapped
