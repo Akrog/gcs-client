@@ -2,9 +2,8 @@
 from __future__ import absolute_import
 
 import collections
-import io
+import os
 
-from apiclient import http as gcs_http
 import requests
 
 from gcs_client import common
@@ -75,70 +74,129 @@ class Object(common.Fillable):
         if not self.exists():
             raise IOError('Object %s does not exist in bucket %s' %
                           (self.name, self.bucket))
-        return GCSObjFile(self.bucket, self.name, self._service, self.size,
-                          generation or self.generation)
+        return GCSObjResumableDownload(self.bucket, self.name,
+                                       self._credentials, None, self.size,
+                                       self.retry_params)
 
 
-class GCSObjFile(object):
-    def __init__(self, bucket, name, service, size, generation=None,
-                 chunksize=None):
-        self.bucket = bucket
-        self.name = name
-        self.generation = generation
-        self._transferer = None
-        self._service = service
-        self.size = size
+class GCSObjResumableDownload(object):
+
+    URL = 'https://www.googleapis.com/storage/v1/b/%s/o/%s'
+
+    def __init__(self, bucket, name, credentials, chunksize=None, size=None,
+                 retry_params=None):
         self._chunksize = chunksize or DEFAULT_BLOCK_SIZE
         assert self._chunksize % BLOCK_MULTIPLE == 0, \
             'chunksize must be multiple of %s' % BLOCK_MULTIPLE
+        self.name = name
+        self.bucket = bucket
+        self.size = size
+        self._offset = 0
+        self._eof = False
+        self._read_bytes = 0
+        self._credentials = credentials
+        self._buffer = _Buffer()
+        self._retry_params = retry_params
+        self._location = self.URL % (bucket, name)
+        self._open()
 
-        req = self._service.objects().get_media(bucket=self.bucket,
-                                                object=self.name,
-                                                generation=self.generation)
-        self._fh = io.BytesIO()
-        self._transferer = gcs_http.MediaIoBaseDownload(
-            self._fh, req, chunksize=self._chunksize)
-        self._status = gcs_http.MediaDownloadProgress(0, int(self.size))
-        self._done = False
-        self._cache = []
+    @common.retry
+    def _open(self):
+        auth_token = self._credentials.get_access_token().access_token
+        headers = {'Authorization': 'Bearer ' + auth_token}
+        r = requests.head(self._location, headers=headers)
+        if r.status_code != requests.codes.ok:
+            raise errors.create_http_exception(
+                r.status_code,
+                'Error opening object %s in bucket %s: %s' %
+                (self.name, self.bucket, r.status_code, r.content))
+        self.closed = False
 
-    def __enter__(self):
-        return self
+    def tell(self):
+        return self._offset
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close()
+    def seek(self, offset, whence=os.SEEK_SET):
+        self._check_is_open()
+
+        if whence == os.SEEK_SET:
+            position = offset
+        elif whence == os.SEEK_CUR:
+            position += offset
+        elif whence == os.SEEK_END:
+            position = self.size + offset
+        else:
+            raise ValueError('whence value %s is invalid.' % whence)
+
+        position = min(position, self.size)
+        position = max(position, 0)
+        # TODO: This could be optimized to not discard all buffer for small
+        # movements.
+        self._offset = self._read_bytes = position
+        self._buffer.clear()
+
+    def _check_is_open(self):
+        if self.closed:
+            raise IOError('File is closed')
+
+    def write(self, data):
+        self._check_is_open()
+        raise IOError('File open for write, cannot read')
 
     def close(self):
-        self._mode = None
-        self._transferer = None
-        self._done = True
-
-    def write(self, size=None):
-        if self._transferer is None:
-            raise IOError('File is closed')
-        raise IOError('File open for read, cannot read')
+        if not self.closed:
+            self.closed = True
 
     def read(self, size=None):
-        if self._transferer is None:
-            raise IOError('File is closed')
-        if self._done:
-            return b''
+        self._check_is_open()
 
-        remaining_in_file = int(self.size) - self._status.resumable_progress
-        if size is None or size < 0:
-            size = remaining_in_file
-        else:
-            size = min(remaining_in_file, size)
-        remaining = size
+        if size is 0 or self._eof:
+            return ''
 
-        while not self._done and remaining:
-            self._transferer._chunksize = min(self._chunksize, remaining)
-            self._status, self._done = self._transferer.next_chunk()
-            remaining = size - self._status.resumable_progress
+        while not self._eof and (not size or len(self._buffer) < size):
+            data, self._eof = self._get_data(self._chunksize, self._read_bytes)
+            self._read_bytes += len(data)
+            self._buffer.write(data)
 
-        data = self._fh.getvalue()
-        self._fh.truncate(0)
+        data = self._buffer.read(size)
+        self._offset += len(data)
         return data
+
+    @common.retry
+    def _get_data(self, size, begin=0):
+        if not size:
+            return ''
+
+        auth_token = self._credentials.get_access_token().access_token
+        end = begin + size - 1
+        headers = {'Authorization': 'Bearer ' + auth_token,
+                   'Range': 'bytes=%d-%d' % (begin, end)}
+        params = {'alt': 'media'}
+        r = requests.get(self._location, params=params, headers=headers)
+        expected = (requests.codes.ok, requests.codes.partial_content,
+                    requests.codes.requested_range_not_satisfiable)
+
+        if r.status_code not in expected:
+            raise errors.create_http_exception(
+                r.status_code,
+                'Error reading object %s in bucket %s: %s' %
+                (self.name, self.bucket, r.status_code, r.content))
+
+        if r.status_code == requests.codes.requested_range_not_satisfiable:
+            return ('', True)
+
+        content_range = r.headers.get('Content-Range')
+        total_size = None
+        if content_range:
+            try:
+                total_size = int(content_range.split('/')[-1])
+                eof = total_size <= begin + len(r.content)
+                self.size = total_size
+            except Exception:
+                eof = len(r.content) < size
+        if total_size is None:
+            eof = len(r.content) < size
+
+        return (r.content, eof)
 
 
 class GCSObjResumableUpload(object):
@@ -199,7 +257,7 @@ class GCSObjResumableUpload(object):
     def close(self):
         if not self.closed:
             self._send_data(self._buffer.read(), finalize=True)
-            self._closed = True
+            self.closed = True
 
     @common.retry
     def _send_data(self, data, finalize=False):
@@ -252,8 +310,9 @@ class _Buffer(object):
         self._size = 0
 
     def write(self, data):
-        self._queue.append(memoryview(data))
-        self._size += len(data)
+        if data:
+            self._queue.append(memoryview(data))
+            self._size += len(data)
 
     def read(self, size=None):
         if size is None or size > self._size:
