@@ -15,7 +15,7 @@ from apiclient import errors
 from gcs_client import common
 
 
-class Test_GCS(unittest.TestCase):
+class TestGCS(unittest.TestCase):
     """Test Google Cloud Service base class."""
 
     def setUp(self):
@@ -84,7 +84,7 @@ class Test_GCS(unittest.TestCase):
                                            credentials=None)
 
 
-class Test_Fillable(Test_GCS):
+class TestFillable(TestGCS):
     """Test Fillable class."""
 
     def setUp(self):
@@ -92,7 +92,7 @@ class Test_Fillable(Test_GCS):
 
     def test_init_without_credentials(self):
         """Variables are initialized correctly."""
-        super(Test_Fillable, self).test_init_without_credentials()
+        super(TestFillable, self).test_init_without_credentials()
         self.assertFalse(self.gcs._data_retrieved)
         self.assertIsNone(self.gcs._exists)
 
@@ -112,7 +112,8 @@ class Test_Fillable(Test_GCS):
         with that data, then try to return requested attribute.
 
         This test confirms that for an valid attribute we can retrieve it and
-        return it."""
+        return it.
+        """
         mock_get_data.return_value = {'name': mock.sentinel.name}
         fill = self.test_class(None)
         self.assertEquals(mock.sentinel.name, fill.name)
@@ -128,7 +129,7 @@ class Test_Fillable(Test_GCS):
 
     @mock.patch('gcs_client.common.Fillable._get_data')
     @mock.patch.object(common.discovery, 'build')
-    def test_auto_fill_get_existing_attr(self, mock_build, mock_get_data):
+    def test_auto_fill_get_nonexistent_attr(self, mock_build, mock_get_data):
         """Getting an attribute that exists on the model.
 
         When requesting a non exiting attribute the Fillable class will first
@@ -136,7 +137,8 @@ class Test_Fillable(Test_GCS):
         with that data, then try to return requested attribute.
 
         This test confirms that for an invalid attribute we can retrieve the
-        data but we'll still return an AttributeError exception."""
+        data but we'll still return an AttributeError exception.
+        """
         mock_get_data.return_value = {'name': mock.sentinel.name}
         fill = self.test_class(None)
         self.assertRaises(AttributeError, getattr, fill, 'wrong_name')
@@ -168,16 +170,15 @@ class Test_Fillable(Test_GCS):
     def test_obj_from_data(self, mock_build, mock_get_data):
         """Test obj_from_data class method."""
         data = {'name': 'my_name', 'one_entry_dict': {'value': '1dict'},
-                'multi_entry_dict': {1: 1, 2:2}}
+                'multi_entry_dict': {1: 1, 2: 2}}
         fill = self.test_class.obj_from_data(data, mock.sentinel.credentials)
         self.assertFalse(fill._exists)
         self.assertTrue(fill._data_retrieved)
         self.assertEqual('my_name', fill.name)
         self.assertEqual('1dict', fill.one_entry_dict)
-        self.assertDictEqual({1: 1, 2:2}, fill.multi_entry_dict)
+        self.assertDictEqual({1: 1, 2: 2}, fill.multi_entry_dict)
 
         # Check that it will not try to retrieve data for non existing
         # attributes
         self.assertRaises(AttributeError, getattr, fill, 'wrong_name')
         self.assertFalse(mock_get_data.called)
-
