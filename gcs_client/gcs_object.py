@@ -63,7 +63,7 @@ class Object(common.Fillable):
         req.execute()
 
     @common.is_complete
-    def open(self, mode, generation=None):
+    def open(self, mode='r', generation=None):
         if mode not in ('r', 'w'):
             raise IOError('Only r or w modes supported')
         if mode == 'w':
