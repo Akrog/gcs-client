@@ -24,12 +24,15 @@ class TestGCS(unittest.TestCase):
     @mock.patch.object(common.discovery, 'build')
     def test_init_without_credentials(self, mock_build):
         """Test init without credentials tries to do discovery."""
+        # NOTE(geguileo): We store gcs on the instance so Fillable tests can
+        # use it.
         self.gcs = self.test_class(None)
         self.assertIsNone(self.gcs.credentials)
         self.assertEqual(mock_build.return_value, self.gcs._service)
         mock_build.assert_called_once_with('storage',
                                            self.test_class.api_version,
                                            credentials=None)
+        self.assertIs(common.RetryParams.get_default(), self.gcs._retry_params)
 
     @mock.patch.object(common.discovery, 'build')
     def test_init_with_credentials(self, mock_build):
@@ -82,6 +85,36 @@ class TestGCS(unittest.TestCase):
         mock_build.assert_called_once_with('storage',
                                            self.test_class.api_version,
                                            credentials=None)
+
+    @mock.patch.object(common.discovery, 'build')
+    def test_get_retry_params(self, mock_build):
+        """Test retry_params getter method."""
+        gcs = self.test_class(mock.sentinel.credentials)
+        self.assertIs(common.RetryParams.get_default(), gcs._retry_params)
+        self.assertIs(common.RetryParams.get_default(), gcs.retry_params)
+
+    @mock.patch.object(common.discovery, 'build')
+    def test_set_retry_params_to_none(self, mock_build):
+        """Test retry_params setter method with None value."""
+        gcs = self.test_class(mock.sentinel.credentials)
+        gcs.retry_params = None
+        self.assertIs(None, gcs.retry_params)
+
+    @mock.patch.object(common.discovery, 'build')
+    def test_set_retry_params(self, mock_build):
+        """Test retry_params setter method with RetryParams instance."""
+        gcs = self.test_class(mock.sentinel.credentials)
+        new_params = common.RetryParams()
+        gcs.retry_params = new_params
+        self.assertIsNot(common.RetryParams.get_default(), gcs.retry_params)
+        self.assertIs(new_params, gcs.retry_params)
+
+    @mock.patch.object(common.discovery, 'build')
+    def test_set_retry_params_incorrect_value(self, mock_build):
+        """Test retry_params setter method with incorrect value."""
+        gcs = self.test_class(mock.sentinel.credentials)
+        self.assertRaises(AssertionError, setattr, gcs, 'retry_params', 1)
+        self.assertIs(common.RetryParams.get_default(), gcs.retry_params)
 
 
 class TestFillable(TestGCS):
