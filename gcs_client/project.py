@@ -72,3 +72,8 @@ class Project(common.GCS):
 
         resp = req.execute()
         return bucket.Bucket.obj_from_data(resp, self.credentials)
+
+    def __str__(self):
+        return '%s' % self.project_id
+
+    __repr__ = __str__
