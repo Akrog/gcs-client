@@ -69,7 +69,8 @@ class Object(common.Fillable):
             raise IOError('Only r or w modes supported')
         if mode == 'w':
             return GCSObjResumableUpload(self.bucket, self.name,
-                                         self._credentials, self.retry_params)
+                                         self._credentials,
+                                         retry_params=self.retry_params)
 
         if not self.exists():
             raise IOError('Object %s does not exist in bucket %s' %
