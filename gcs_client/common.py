@@ -16,7 +16,7 @@ from gcs_client import errors as gcs_errors
 def is_complete(f):
     @wraps(f)
     def wrapped(self, *args, **kwargs):
-        attributes = getattr(self, '_required_attributes', [])
+        attributes = getattr(self, '_required_attributes') or []
         for attribute in attributes:
             if not getattr(self, attribute, None):
                 raise Exception('%(func_name)s needs %(attr)s to be set.' %
