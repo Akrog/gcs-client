@@ -96,12 +96,9 @@ class Fillable(GCS):
         try:
             data = self._get_data()
             self._exists = True
-        except errors.HttpError as exc:
-            if exc.resp.status == 404:
-                self._exists = False
-                raise AttributeError
-            else:
-                raise
+        except gcs_errors.NotFound:
+            self._exists = False
+            raise AttributeError
 
         self._fill_with_data(data)
         return getattr(self, name)

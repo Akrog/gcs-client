@@ -10,9 +10,9 @@ Tests common classes.
 import unittest
 
 import mock
-from apiclient import errors
 
 from gcs_client import common
+from gcs_client import errors as gcs_errors
 
 
 class TestGCS(unittest.TestCase):
@@ -189,9 +189,7 @@ class TestFillable(TestGCS):
     @mock.patch.object(common.discovery, 'build')
     def test_auto_fill_doesnt_exist(self, mock_build, mock_get_data):
         """Raises Attribute error for non existing resource."""
-        resp = mock.Mock()
-        resp.status = 404
-        mock_get_data.side_effect = errors.HttpError(resp, b'')
+        mock_get_data.side_effect = gcs_errors.NotFound()
         fill = self.test_class(None)
         self.assertRaises(AttributeError, getattr, fill, 'name')
         self.assertFalse(fill._exists)
