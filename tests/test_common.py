@@ -162,6 +162,33 @@ class TestFillable(TestGCS):
 
     @mock.patch('gcs_client.common.Fillable._get_data')
     @mock.patch.object(common.discovery, 'build')
+    def test_auto_fill_skip_assignment(self, mock_build, mock_get_data):
+        """Getting an attribute skipping existing attribute.
+
+        When requesting a non exiting attribute the Fillable class will first
+        get data (calling _get_data method) and create attributes in the object
+        with that data, then try to return requested attribute.
+
+        This test confirms that the filling of attributes will skip existing
+        attributes.
+        """
+        mock_get_data.return_value = {'credentials': mock.sentinel.new_attr,
+                                      'name': mock.sentinel.name}
+        fill = self.test_class(mock.sentinel.credentials)
+        self.assertEquals(mock.sentinel.name, fill.name)
+        self.assertEquals(mock.sentinel.credentials, fill.credentials)
+        self.assertTrue(fill._exists)
+        self.assertTrue(fill._data_retrieved)
+        mock_get_data.assert_called_once_with()
+
+        # Calling non existing attribute will not trigger another _get_data
+        # call
+        mock_get_data.reset_mock()
+        self.assertRaises(AttributeError, getattr, fill, 'wrong_name')
+        self.assertFalse(mock_get_data.called)
+
+    @mock.patch('gcs_client.common.Fillable._get_data')
+    @mock.patch.object(common.discovery, 'build')
     def test_auto_fill_get_nonexistent_attr(self, mock_build, mock_get_data):
         """Getting an attribute that exists on the model.
 
@@ -192,6 +219,17 @@ class TestFillable(TestGCS):
         mock_get_data.side_effect = gcs_errors.NotFound()
         fill = self.test_class(None)
         self.assertRaises(AttributeError, getattr, fill, 'name')
+        self.assertFalse(fill._exists)
+        self.assertFalse(fill._data_retrieved)
+        mock_get_data.assert_called_once_with()
+
+    @mock.patch('gcs_client.common.Fillable._get_data')
+    @mock.patch.object(common.discovery, 'build')
+    def test_auto_fill_other_http_error(self, mock_build, mock_get_data):
+        """Raises HTTP exception on non expected HTTP exceptions."""
+        mock_get_data.side_effect = gcs_errors.BadRequest()
+        fill = self.test_class(None)
+        self.assertRaises(gcs_errors.BadRequest, getattr, fill, 'name')
         self.assertFalse(fill._exists)
         self.assertFalse(fill._data_retrieved)
         mock_get_data.assert_called_once_with()
