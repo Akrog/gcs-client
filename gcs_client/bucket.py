@@ -59,3 +59,10 @@ class Bucket(common.Fillable):
         obj = gcs_object.Object(self.name, name, generation, self.credentials,
                                 self.retry_params)
         return obj.open(mode, generation)
+
+    def __str__(self):
+        return '%s' % self.name
+
+    def __repr__(self):
+        return ("%s.%s('%s') #etag: %s" % (self.__module__,
+                self.__class__.__name__, self.name, self.etag))
