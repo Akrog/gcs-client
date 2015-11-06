@@ -182,3 +182,57 @@ class TestFillable(TestGCS):
         # attributes
         self.assertRaises(AttributeError, getattr, fill, 'wrong_name')
         self.assertFalse(mock_get_data.called)
+
+
+class TestIsCompleteDecorator(unittest.TestCase):
+    """Test is_complete decorator."""
+
+    def test_missing_required_attributes_attribute(self):
+        """Test decorator with missing attribute _required_attributes."""
+        function = mock.Mock(__name__='fake')
+        slf = mock.Mock(spec=[])
+        wrapper = common.is_complete(function)
+        self.assertRaises(Exception, wrapper, slf, 1, entry=2)
+        self.assertFalse(function.called)
+
+    def test_required_attributes_is_none(self):
+        """Test decorator with attribute _required_attributes set to None."""
+        function = mock.Mock(__name__='fake',
+                             return_value=mock.sentinel.return_value)
+        slf = mock.Mock(spec=[], _required_attributes=None)
+        wrapper = common.is_complete(function)
+
+        self.assertEqual(mock.sentinel.return_value, wrapper(slf, 1, entry=2))
+        function.assert_called_once_with(slf, 1, entry=2)
+
+    def test_required_attributes_is_empty(self):
+        """Test decorator with empty attribute _required_attributes."""
+        function = mock.Mock(__name__='fake',
+                             return_value=mock.sentinel.return_value)
+        slf = mock.Mock(spec=[], _required_attributes=[])
+        wrapper = common.is_complete(function)
+
+        self.assertEqual(mock.sentinel.return_value, wrapper(slf, 1, entry=2))
+        function.assert_called_once_with(slf, 1, entry=2)
+
+    def test_missing_attribute(self):
+        """Test decorator when missing required attribute.."""
+        function = mock.Mock(__name__='fake',
+                             return_value=mock.sentinel.return_value)
+        slf = mock.Mock(spec=['attr1'],
+                        _required_attributes=['attr1', 'attr2'])
+        wrapper = common.is_complete(function)
+
+        self.assertRaises(Exception, wrapper, slf, 1, entry=2)
+        self.assertFalse(function.called)
+
+    def test_complete(self):
+        """Test decorator when we have all required attributes."""
+        function = mock.Mock(__name__='fake',
+                             return_value=mock.sentinel.return_value)
+        slf = mock.Mock(spec=['attr1', 'attr2'],
+                        _required_attributes=['attr1', 'attr2'])
+        wrapper = common.is_complete(function)
+
+        self.assertEqual(mock.sentinel.return_value, wrapper(slf, 1, entry=2))
+        function.assert_called_once_with(slf, 1, entry=2)
