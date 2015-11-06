@@ -67,6 +67,14 @@ class Object(common.Fillable):
         return GCSObjFile(self.bucket, self.name, self._credentials, mode,
                           None, None, self.retry_params)
 
+    def __str__(self):
+        return '%s/%s' % (self.bucket, self.name)
+
+    def __repr__(self):
+        return ("%s.%s('%s', '%s', '%s') #etag: %s" % (self.__module__,
+                self.__class__.__name__, self.bucket, self.name,
+                self.generation, self.etag))
+
 
 class GCSObjFile(object):
     URL = 'https://www.googleapis.com/storage/v1/b/%s/o/%s'
