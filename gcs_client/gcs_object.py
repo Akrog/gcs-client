@@ -169,7 +169,7 @@ class GCSObjResumableUpload(object):
         self.closed = r.status_code != requests.codes.ok
         if self.closed:
             raise errors.create_http_exception(
-                r.status_code, 'Could not open object %s in buckets %s: %s' %
+                r.status_code, 'Could not open object %s in bucket %s: %s-%s' %
                 (self.name, self.bucket, r.status_code, r.content))
         self._location = r.headers['Location']
 
@@ -227,7 +227,7 @@ class GCSObjResumableUpload(object):
         if r.status_code != expected:
             raise errors.create_http_exception(
                 r.status_code,
-                'Error writting to object %s in buckets %s: %s' %
+                'Error writting to object %s in bucket %s: %s-%s' %
                 (self.name, self.bucket, r.status_code, r.content))
         self._written += len(data)
 
