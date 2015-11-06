@@ -64,27 +64,20 @@ class Object(common.Fillable):
 
     @common.is_complete
     def open(self, mode='r', generation=None):
+        return GCSObjFile(self.bucket, self.name, self._credentials, mode,
+                          None, None, self.retry_params)
+
+
+class GCSObjFile(object):
+    URL = 'https://www.googleapis.com/storage/v1/b/%s/o/%s'
+    URL_UPLOAD = 'https://www.googleapis.com/upload/storage/v1/b/%s/o'
+
+    def __init__(self, bucket, name, credentials, mode='r', chunksize=None,
+                 size=None, retry_params=None):
         if mode not in ('r', 'w'):
             raise IOError('Only r or w modes supported')
-        if mode == 'w':
-            return GCSObjResumableUpload(self.bucket, self.name,
-                                         self._credentials,
-                                         retry_params=self.retry_params)
+        self.mode = mode
 
-        if not self.exists():
-            raise IOError('Object %s does not exist in bucket %s' %
-                          (self.name, self.bucket))
-        return GCSObjResumableDownload(self.bucket, self.name,
-                                       self._credentials, None, self.size,
-                                       self.retry_params)
-
-
-class GCSObjResumableDownload(object):
-
-    URL = 'https://www.googleapis.com/storage/v1/b/%s/o/%s'
-
-    def __init__(self, bucket, name, credentials, chunksize=None, size=None,
-                 retry_params=None):
         self._chunksize = chunksize or DEFAULT_BLOCK_SIZE
         assert self._chunksize % BLOCK_MULTIPLE == 0, \
             'chunksize must be multiple of %s' % BLOCK_MULTIPLE
@@ -93,22 +86,58 @@ class GCSObjResumableDownload(object):
         self.size = size
         self._offset = 0
         self._eof = False
-        self._read_bytes = 0
+        self._gcs_offset = 0
         self._credentials = credentials
         self._buffer = _Buffer()
         self._retry_params = retry_params
-        self._location = self.URL % (bucket, name)
-        self._open()
+        try:
+            self._open()
+        except errors.NotFound:
+            raise IOError('Object %s does not exist in bucket %s' %
+                          (name, bucket))
+
+    def _is_readable(self):
+        return self.mode == 'r'
+
+    def _is_writable(self):
+        return self.mode == 'w'
+
+    def _check_is_writable(self, action='write'):
+        if self._is_readable():
+            raise IOError('File open for reading, cannot %s' % action)
+
+    def _check_is_readable(self, action='read'):
+        if self._is_writable():
+            raise IOError('File open for writing, cannot %s' % action)
+
+    def _check_is_open(self):
+        if self.closed:
+            raise IOError('File is closed')
 
     @common.retry
     def _open(self):
         auth_token = self._credentials.get_access_token().access_token
-        headers = {'Authorization': 'Bearer ' + auth_token}
-        r = requests.head(self._location, headers=headers)
+        authorization = 'Bearer ' + auth_token
+        if self._is_readable():
+            self._location = self.URL % (self.bucket, self.name)
+            headers = {'Authorization': authorization}
+            r = requests.head(self._location, headers=headers)
+
+        else:
+            self.size = 0
+            initial_url = self.URL_UPLOAD % self.bucket
+            params = {'uploadType': 'resumable', 'name': self.name}
+            headers = {'x-goog-resumable': 'start',
+                       'Authorization': authorization,
+                       'Content-type': 'application/octet-stream'}
+            r = requests.post(initial_url, params=params, headers=headers)
+            if r.status_code == requests.codes.ok:
+                self._location = r.headers['Location']
+
         if r.status_code != requests.codes.ok:
             raise errors.create_http_exception(
                 r.status_code,
-                'Error opening object %s in bucket %s: %s' %
+                'Error opening object %s in bucket %s: %s-%s' %
                 (self.name, self.bucket, r.status_code, r.content))
         self.closed = False
 
@@ -117,6 +146,7 @@ class GCSObjResumableDownload(object):
 
     def seek(self, offset, whence=os.SEEK_SET):
         self._check_is_open()
+        self._check_is_redable('seek')
 
         if whence == os.SEEK_SET:
             position = offset
@@ -131,30 +161,67 @@ class GCSObjResumableDownload(object):
         position = max(position, 0)
         # TODO: This could be optimized to not discard all buffer for small
         # movements.
-        self._offset = self._read_bytes = position
+        self._offset = self._gcs_offset = position
         self._buffer.clear()
-
-    def _check_is_open(self):
-        if self.closed:
-            raise IOError('File is closed')
 
     def write(self, data):
         self._check_is_open()
-        raise IOError('File open for write, cannot read')
+        self._check_is_writable()
+
+        self.size += len(data)
+
+        self._buffer.write(data)
+        while len(self._buffer) >= self._chunksize:
+            data = self._buffer.read(self._chunksize)
+            self._send_data(data, self._gcs_offset)
+            self._gcs_offset += len(data)
+
+    @common.retry
+    def _send_data(self, data, begin=0, finalize=False):
+        if not (data or finalize):
+            return
+
+        if not data:
+            size = self.size
+            data_range = 'bytes */%s' % size
+        else:
+            end = begin + len(data) - 1
+            size = self.size if finalize else '*'
+            data_range = 'bytes %s-%s/%s' % (begin, end, size)
+
+        auth_token = self._credentials.get_access_token().access_token
+        headers = {'Authorization': 'Bearer ' + auth_token,
+                   'Content-Range': data_range}
+        r = requests.put(self._location, data=data, headers=headers)
+
+        if size == '*':
+            expected = requests.codes.resume_incomplete
+        else:
+            expected = requests.codes.ok
+
+        if r.status_code != expected:
+            raise errors.create_http_exception(
+                r.status_code,
+                'Error writting to object %s in bucket %s: %s-%s' %
+                (self.name, self.bucket, r.status_code, r.content))
 
     def close(self):
         if not self.closed:
+            if self._is_writable():
+                self._send_data(self._buffer.read(), self._gcs_offset,
+                                finalize=True)
             self.closed = True
 
     def read(self, size=None):
         self._check_is_open()
+        self._check_is_readable()
 
         if size is 0 or self._eof:
             return ''
 
         while not self._eof and (not size or len(self._buffer) < size):
-            data, self._eof = self._get_data(self._chunksize, self._read_bytes)
-            self._read_bytes += len(data)
+            data, self._eof = self._get_data(self._chunksize, self._gcs_offset)
+            self._gcs_offset += len(data)
             self._buffer.write(data)
 
         data = self._buffer.read(size)
@@ -197,98 +264,6 @@ class GCSObjResumableDownload(object):
             eof = len(r.content) < size
 
         return (r.content, eof)
-
-
-class GCSObjResumableUpload(object):
-    URL = 'https://www.googleapis.com/upload/storage/v1/b/%s/o'
-
-    def __init__(self, bucket, name, credentials, chunksize=None, size=None,
-                 retry_params=None):
-        self._chunksize = chunksize or DEFAULT_BLOCK_SIZE
-        assert self._chunksize % BLOCK_MULTIPLE == 0, \
-            'chunksize must be multiple of %s' % BLOCK_MULTIPLE
-        self.name = name
-        self.bucket = bucket
-        self.size = size or 0
-        self._written = 0
-        self._credentials = credentials
-        self._buffer = _Buffer()
-        self._retry_params = retry_params
-        self._open()
-
-    @common.retry
-    def _open(self):
-        initial_url = self.URL % self.bucket
-        params = {'uploadType': 'resumable', 'name': self.name}
-        auth_token = self._credentials.get_access_token().access_token
-        headers = {'x-goog-resumable': 'start',
-                   'Authorization': 'Bearer ' + auth_token,
-                   'Content-type': 'application/octet-stream'}
-        r = requests.post(initial_url, params=params, headers=headers)
-        self.closed = r.status_code != requests.codes.ok
-        if self.closed:
-            raise errors.create_http_exception(
-                r.status_code, 'Could not open object %s in bucket %s: %s-%s' %
-                (self.name, self.bucket, r.status_code, r.content))
-        self._location = r.headers['Location']
-
-    def tell(self):
-        return self.size
-
-    def seek(self, offset, whence=None):
-        raise IOError("Object doesn't support seek operation")
-
-    def _check_is_open(self):
-        if self.closed:
-            raise IOError('File is closed')
-
-    def read(self, size=None):
-        self._check_is_open()
-        raise IOError('File open for write, cannot read')
-
-    def write(self, data):
-        self._check_is_open()
-        self.size += len(data)
-
-        self._buffer.write(data)
-        while len(self._buffer) >= self._chunksize:
-            self._send_data(self._buffer.read(self._chunksize))
-
-    def close(self):
-        if not self.closed:
-            self._send_data(self._buffer.read(), finalize=True)
-            self.closed = True
-
-    @common.retry
-    def _send_data(self, data, finalize=False):
-        if not (data or finalize):
-            return
-
-        if not data:
-            size = self.size
-            data_range = 'bytes */%s' % size
-        else:
-            start = self._written
-            end = self._written + len(data) - 1
-            size = self.size if finalize else '*'
-            data_range = 'bytes %s-%s/%s' % (start, end, size)
-
-        auth_token = self._credentials.get_access_token().access_token
-        headers = {'Authorization': 'Bearer ' + auth_token,
-                   'Content-Range': data_range}
-        r = requests.put(self._location, data=data, headers=headers)
-
-        if size == '*':
-            expected = requests.codes.resume_incomplete
-        else:
-            expected = requests.codes.ok
-
-        if r.status_code != expected:
-            raise errors.create_http_exception(
-                r.status_code,
-                'Error writting to object %s in bucket %s: %s-%s' %
-                (self.name, self.bucket, r.status_code, r.content))
-        self._written += len(data)
 
     def __enter__(self):
         return self
