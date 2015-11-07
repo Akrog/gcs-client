@@ -318,3 +318,70 @@ class TestIsCompleteDecorator(unittest.TestCase):
 
         self.assertEqual(mock.sentinel.return_value, wrapper(slf, 1, entry=2))
         function.assert_called_once_with(slf, 1, entry=2)
+
+
+class TestRetryParams(unittest.TestCase):
+    """Test RetryParams class."""
+
+    def setUp(self):
+        # We don't want to bring default configuration from one test to another
+        if hasattr(common.RetryParams, 'default'):
+            delattr(common.RetryParams, 'default')
+
+    def test_init_default(self):
+        """Test that default values for new instances are as expected."""
+        params = common.RetryParams()
+        self.assertEqual(5, params.max_retries)
+        self.assertEqual(1, params.initial_delay)
+        self.assertEqual(32, params.max_backoff)
+        self.assertEqual(2, params.backoff_factor)
+        self.assertTrue(params.randomize)
+
+    def test_init_values(self):
+        """Test that we can initialize values for new instances."""
+        params = common.RetryParams(mock.sentinel.max_retries, 2, 3, 4, False)
+        self.assertEqual(mock.sentinel.max_retries, params.max_retries)
+        self.assertEqual(2, params.initial_delay)
+        self.assertEqual(3, params.max_backoff)
+        self.assertEqual(4, params.backoff_factor)
+        self.assertFalse(params.randomize)
+
+    def test_init_values_by_key(self):
+        """Test that we can initialize values for new instances by name."""
+        params = common.RetryParams(max_retries=1, initial_delay=2,
+                                    max_backoff=3, backoff_factor=4,
+                                    randomize=False)
+        self.assertEqual(1, params.max_retries)
+        self.assertEqual(2, params.initial_delay)
+        self.assertEqual(3, params.max_backoff)
+        self.assertEqual(4, params.backoff_factor)
+        self.assertFalse(params.randomize)
+
+    def test_get_default_singleton(self):
+        """Test that get_default always returns the same instance."""
+        first_params = common.RetryParams.get_default()
+        second_params = common.RetryParams.get_default()
+        self.assertIs(first_params, second_params)
+
+    def test_set_default_using_instance(self):
+        """Test that get_default always returns the same instance."""
+        first_params = common.RetryParams.get_default()
+        first_params_dict = dict(vars(common.RetryParams.get_default()))
+        new_params = common.RetryParams(1, 2, 3, 4, False)
+        common.RetryParams.set_default(new_params)
+        second_params = common.RetryParams.get_default()
+        self.assertIs(first_params, second_params)
+        self.assertDictEqual(vars(new_params), vars(second_params))
+        self.assertNotEqual(vars(new_params), first_params_dict)
+
+    def test_set_default_using_positional_args(self):
+        """Test that get_default always returns the same instance."""
+        first_params = common.RetryParams.get_default()
+        first_params_values = vars(common.RetryParams.get_default()).values()
+        new_params = (1, 2, 3, 4, False)
+        common.RetryParams.set_default(*new_params)
+        second_params = common.RetryParams.get_default()
+        self.assertIs(first_params, second_params)
+        self.assertEqual(sorted(new_params),
+                         sorted(vars(second_params).values()))
+        self.assertNotEqual(sorted(new_params), sorted(first_params_values))
