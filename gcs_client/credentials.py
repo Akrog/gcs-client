@@ -20,6 +20,7 @@ import json
 from oauth2client import client as oauth2_client
 
 from gcs_client.constants import scope as gcs_scope
+from gcs_client import errors
 
 
 class GCSCredential(oauth2_client.SignedJwtAssertionCredentials):
@@ -33,15 +34,16 @@ class GCSCredential(oauth2_client.SignedJwtAssertionCredentials):
 
     def __init__(self, key_file_name, email=None, scope=gcs_scope.OWNER):
         if scope not in self.scope_urls:
-            raise Exception('scope must be one of %s' % self.scope_urls.keys())
+            raise errors.Credentials('scope must be one of %s' %
+                                     self.scope_urls.keys())
         self.scope = scope
 
         try:
             with open(key_file_name, 'r') as f:
                 key_data = f.read()
         except IOError:
-            raise Exception('Could not read data from private key file %s.',
-                            key_file_name)
+            raise errors.Credentials(
+                'Could not read data from private key file %s.', key_file_name)
 
         try:
             json_data = json.loads(key_data)
@@ -49,8 +51,8 @@ class GCSCredential(oauth2_client.SignedJwtAssertionCredentials):
             email = json_data['client_email']
         except Exception:
             if not email:
-                raise Exception('Non JSON private key needs email, but it was '
-                                'not provided')
+                raise errors.Credentials(
+                    'Non JSON private key needs email, but it was missing')
 
         url = self.common_url + self.scope_urls[scope]
         super(GCSCredential, self).__init__(email, key_data, url)

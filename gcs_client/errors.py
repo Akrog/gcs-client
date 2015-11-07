@@ -24,6 +24,11 @@ class Error(Exception):
     pass
 
 
+class Credentials(Error):
+    """Credentials errors."""
+    pass
+
+
 class Http(Error):
     """HTTP specific errors."""
     code = None
