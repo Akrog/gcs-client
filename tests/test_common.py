@@ -24,6 +24,8 @@ import unittest
 
 import mock
 
+from apiclient import errors
+
 from gcs_client import common
 from gcs_client import errors as gcs_errors
 
@@ -385,3 +387,31 @@ class TestRetryParams(unittest.TestCase):
         self.assertEqual(sorted(new_params),
                          sorted(vars(second_params).values()))
         self.assertNotEqual(sorted(new_params), sorted(first_params_values))
+
+
+class TestConvertException(unittest.TestCase):
+    """Test convert_exception decorator."""
+
+    def test_convert_exception_no_exception(self):
+        """Test decorator when the function doesn't raise any exception."""
+        function = mock.Mock(__name__='fake',
+                             return_value=mock.sentinel.funct_return)
+        wrapper = common.convert_exception(function)
+        result = wrapper(mock.sentinel.pos_arg, key=mock.sentinel.key_value)
+        self.assertEqual(mock.sentinel.funct_return, result)
+        function.assert_called_once_with(mock.sentinel.pos_arg,
+                                         key=mock.sentinel.key_value)
+
+    @mock.patch('gcs_client.errors.create_http_exception')
+    def test_convert_exception_raise_exception(self, create_mock):
+        """Test decorator when the function raises an exception."""
+        create_mock.side_effect = gcs_errors.Http()
+        exc = errors.HttpError({'status': mock.sentinel.status},
+                               b'', mock.sentinel.uri)
+        function = mock.Mock(__name__='fake', side_effect=exc)
+        wrapper = common.convert_exception(function)
+        self.assertRaises(gcs_errors.Http, wrapper, mock.sentinel.pos_arg,
+                          key=mock.sentinel.key_value)
+        function.assert_called_once_with(mock.sentinel.pos_arg,
+                                         key=mock.sentinel.key_value)
+        create_mock.assert_called_once_with(mock.sentinel.status, exc)
