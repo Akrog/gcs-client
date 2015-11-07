@@ -18,7 +18,7 @@
 test_object
 ----------------------------------
 
-Tests for Object class.
+Tests for object.py file.
 """
 
 import unittest
@@ -29,6 +29,7 @@ from gcs_client import gcs_object
 
 
 class TestObject(unittest.TestCase):
+    """Tests for Object class."""
 
     @mock.patch('gcs_client.common.Fillable.__init__')
     def test_init(self, mock_init):
@@ -145,3 +146,78 @@ class TestObject(unittest.TestCase):
                                           mock.sentinel.name, creds,
                                           mock.sentinel.mode, None, None,
                                           mock.sentinel.retry_params)
+
+
+class TestBuffer(unittest.TestCase):
+    """Tests for _Buffer class."""
+
+    def setUp(self):
+        self.buf = gcs_object._Buffer()
+
+    def test_init(self):
+        """Test buffer initialization."""
+        self.assertEqual(0, len(self.buf))
+
+    def test_write(self):
+        """Test basic write method."""
+        data = '0' * 50 + '1' * 50
+        self.buf.write(data)
+        self.assertEqual(len(data), len(self.buf))
+        self.assertEqual(1, len(self.buf._queue))
+        self.assertEqual(data, self.buf._queue[0])
+
+    def test_multiple_writes(self):
+        """Test multiple writes."""
+        data = '0' * 50
+        self.buf.write(data)
+        data2 = data + '1' * 50
+        self.buf.write(data2)
+        self.assertEqual(len(data) + len(data2), len(self.buf))
+        self.assertEqual(2, len(self.buf._queue))
+        self.assertEqual(data, self.buf._queue[0])
+        self.assertEqual(data2, self.buf._queue[1])
+
+    def test_read(self):
+        """Test basic read all method."""
+        data = '0' * 50
+        self.buf.write(data)
+        data2 = '1' * 50
+        self.buf.write(data2)
+        read = self.buf.read()
+        self.assertEqual(0, len(self.buf))
+        self.assertEqual(data + data2, read)
+        self.assertEqual(0, len(self.buf._queue))
+
+    def test_read_partial(self):
+        """Test complex read overlapping reads from different 'chunks'."""
+        data = '0' * 20 + '1' * 20
+        self.buf.write(data)
+        data2 = '2' * 50
+        self.buf.write(data2)
+
+        read = self.buf.read(20)
+        self.assertEqual(70, len(self.buf))
+        self.assertEqual(data[:20], read)
+
+        read = self.buf.read(10)
+        self.assertEqual(60, len(self.buf))
+        self.assertEqual(data[20:30], read)
+
+        read = self.buf.read(30)
+        self.assertEqual(30, len(self.buf))
+        self.assertEqual(data[30:] + data2[:20], read)
+
+        read = self.buf.read(40)
+        self.assertEqual(0, len(self.buf))
+        self.assertEqual(data2[20:], read)
+
+    def test_clear(self):
+        """Test clear method."""
+        data = '0' * 50
+        self.buf.write(data)
+        data2 = '1' * 50
+        self.buf.write(data2)
+        self.assertEqual(len(data) + len(data2), len(self.buf))
+        self.buf.clear()
+        self.assertEqual(0, len(self.buf))
+        self.assertEqual(0, len(self.buf._queue))
