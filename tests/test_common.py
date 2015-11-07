@@ -18,7 +18,7 @@
 test_common
 ----------------------------------
 
-Tests common classes.
+Tests common classes and decorators.
 """
 import unittest
 
@@ -415,3 +415,121 @@ class TestConvertException(unittest.TestCase):
         function.assert_called_once_with(mock.sentinel.pos_arg,
                                          key=mock.sentinel.key_value)
         create_mock.assert_called_once_with(mock.sentinel.status, exc)
+
+
+class TestRetry(unittest.TestCase):
+    def setUp(self):
+        # Set default retries to 2 retries and no delay between retries
+        self.retries = 2
+        common.RetryParams.set_default(self.retries, 0)
+
+    def test_retry_no_error(self):
+        """Test function is only called once if there is no error."""
+        function = mock.Mock(__name__='fake',
+                             return_value=mock.sentinel.funct_return)
+        slf = mock.Mock(spec=[])
+        wrapper = common.retry(function)
+        result = wrapper(slf, mock.sentinel.pos_arg, key=mock.sentinel.key_arg)
+        self.assertEqual(mock.sentinel.funct_return, result)
+        function.assert_called_once_with(slf, mock.sentinel.pos_arg,
+                                         key=mock.sentinel.key_arg)
+
+    def test_retry_error_default(self):
+        """Test that we retry the function and end up raising the error."""
+        function = mock.Mock(__name__='fake',
+                             side_effect=gcs_errors.RequestTimeout())
+        slf = mock.Mock(spec=[])
+        wrapper = common.retry(function)
+        self.assertRaises(gcs_errors.RequestTimeout, wrapper, slf)
+        # Initial call plus all the retries
+        self.assertEqual(self.retries + 1, function.call_count)
+
+    def test_retry_excluded_exception(self):
+        """Test that we don't retry not included exceptions."""
+        function = mock.Mock(__name__='fake',
+                             side_effect=gcs_errors.NotFound())
+        slf = mock.Mock(spec=[])
+        wrapper = common.retry(function)
+        self.assertRaises(gcs_errors.NotFound, wrapper, slf)
+        # Initial call plus all the retries
+        self.assertEqual(1, function.call_count)
+
+    def test_retry_error_default_finally_succeeds(self):
+        """Test that after retries we end up returning a result."""
+        exc = gcs_errors.RequestTimeout()
+        function = mock.Mock(__name__='fake', side_effect=[exc,
+                             mock.sentinel.funct_return])
+        slf = mock.Mock(spec=[])
+        wrapper = common.retry(function)
+        self.assertEqual(mock.sentinel.funct_return,
+                         wrapper(slf, mock.sentinel.pos_arg,
+                                 key=mock.sentinel.key_arg))
+        self.assertEqual(self.retries, function.call_count)
+
+    def test_retry_no_retry(self):
+        """Test that we can set no retry on decorator call."""
+        function = mock.Mock(__name__='fake',
+                             side_effect=gcs_errors.RequestTimeout())
+        slf = mock.Mock(_retry_params=common.RetryParams.get_default())
+        wrapper = common.retry(None)(function)
+        self.assertRaises(gcs_errors.RequestTimeout, wrapper, slf)
+        # Initial call plus all the retries
+        self.assertEqual(1, function.call_count)
+
+    def test_retry_specify_params_decorator(self):
+        """Test that we can set retry parameter on decorator call."""
+        function = mock.Mock(__name__='fake',
+                             side_effect=gcs_errors.RequestTimeout())
+        slf = mock.Mock(spec=[])
+        retries = self.retries + 1
+        wrapper = common.retry(common.RetryParams(retries, 0))(function)
+        self.assertRaises(gcs_errors.RequestTimeout, wrapper, slf)
+        # Initial call plus all the retries
+        self.assertEqual(retries + 1, function.call_count)
+
+    def test_retry_specify_params_self(self):
+        """Test that we can set retry parameter on self attribute."""
+        function = mock.Mock(__name__='fake',
+                             side_effect=gcs_errors.RequestTimeout())
+        retries = self.retries + 1
+        slf = mock.Mock(_retry_params=common.RetryParams(retries, 0))
+        wrapper = common.retry(function)
+        self.assertRaises(gcs_errors.RequestTimeout, wrapper, slf)
+        # Initial call plus all the retries
+        self.assertEqual(retries + 1, function.call_count)
+
+    def test_retry_specify_params_self_custom_attr(self):
+        """Test that we can set retry parameter on self in custom attribute."""
+        function = mock.Mock(__name__='fake',
+                             side_effect=gcs_errors.RequestTimeout())
+        retries = self.retries + 1
+        slf = mock.Mock(_retry_params=None,
+                        _my_retry_params=common.RetryParams(retries, 0))
+        wrapper = common.retry('_my_retry_params')(function)
+        self.assertRaises(gcs_errors.RequestTimeout, wrapper, slf)
+        # Initial call plus all the retries
+        self.assertEqual(retries + 1, function.call_count)
+
+    def test_retry_error_default_specify_codes(self):
+        """Test that we can change retry status codes with default retries."""
+        function = mock.Mock(__name__='fake',
+                             side_effect=gcs_errors.NotFound())
+        slf = mock.Mock(spec=[])
+        error_codes = [gcs_errors.NotFound.code]
+        wrapper = common.retry(error_codes=error_codes)(function)
+        self.assertRaises(gcs_errors.NotFound, wrapper, slf)
+        # Initial call plus all the retries
+        self.assertEqual(self.retries + 1, function.call_count)
+
+    def test_retry_error_default_specify_both(self):
+        """Test that we can set both arguments in the decorator."""
+        function = mock.Mock(__name__='fake',
+                             side_effect=gcs_errors.NotFound())
+        retries = self.retries + 1
+        slf = mock.Mock(spec=[])
+        error_codes = [gcs_errors.NotFound.code]
+        wrapper = common.retry(common.RetryParams(retries, 0), error_codes)
+        wrapper = wrapper(function)
+        self.assertRaises(gcs_errors.NotFound, wrapper, slf)
+        # Initial call plus all the retries
+        self.assertEqual(retries + 1, function.call_count)
