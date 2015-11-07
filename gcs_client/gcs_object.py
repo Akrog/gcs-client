@@ -87,7 +87,7 @@ class Object(common.Fillable):
     def __repr__(self):
         return ("%s.%s('%s', '%s', '%s') #etag: %s" % (self.__module__,
                 self.__class__.__name__, self.bucket, self.name,
-                self.generation, self.etag))
+                self.generation, getattr(self, 'etag', '?')))
 
 
 class GCSObjFile(object):
