@@ -164,6 +164,7 @@ class GCSObjFile(object):
         self.closed = False
 
     def tell(self):
+        self._check_is_open()
         return self._offset
 
     def seek(self, offset, whence=os.SEEK_SET):
@@ -267,7 +268,7 @@ class GCSObjFile(object):
         if r.status_code not in expected:
             raise errors.create_http_exception(
                 r.status_code,
-                'Error reading object %s in bucket %s: %s' %
+                'Error reading object %s in bucket %s: %s-%s' %
                 (self.name, self.bucket, r.status_code, r.content))
 
         if r.status_code == requests.codes.requested_range_not_satisfiable:
