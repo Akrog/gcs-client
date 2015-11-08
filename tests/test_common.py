@@ -444,6 +444,24 @@ class TestRetry(unittest.TestCase):
         # Initial call plus all the retries
         self.assertEqual(self.retries + 1, function.call_count)
 
+    @mock.patch('time.sleep')
+    def test_retry_error_default_reach_max_backoff(self, time_mock):
+        """Test that we don't exceed max backoff time."""
+        retries = 4
+        common.RetryParams.set_default(retries, 1, 4, 2, False)
+        function = mock.Mock(__name__='fake',
+                             side_effect=gcs_errors.RequestTimeout())
+        slf = mock.Mock(spec=[])
+        wrapper = common.retry(function)
+        self.assertRaises(gcs_errors.RequestTimeout, wrapper, slf)
+        # Initial call plus all the retries
+        self.assertEqual(retries + 1, function.call_count)
+        self.assertEqual(retries, time_mock.call_count)
+
+        delays = (1, 2, 4, 4)
+        for i in range(retries):
+            self.assertEqual(delays[i], time_mock.call_args_list[i][0][0])
+
     def test_retry_excluded_exception(self):
         """Test that we don't retry not included exceptions."""
         function = mock.Mock(__name__='fake',

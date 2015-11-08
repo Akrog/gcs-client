@@ -80,3 +80,13 @@ class TestErrors(unittest.TestCase):
             credentials.GCSCredential('key.json', mock.sentinel.email)
             mock_creds.assert_called_once_with(mock.sentinel.email, file_data,
                                                mock.ANY)
+
+    @mock.patch.object(credentials.oauth2_client.SignedJwtAssertionCredentials,
+                       '__init__')
+    def test_init_error_reading(self, mock_creds):
+        """Test init with an error reading the file."""
+        file_mock = mock.mock_open()
+        file_mock.return_value.read.side_effect = IOError()
+        with mock.patch.object(moves.builtins, 'open', file_mock):
+            self.assertRaises(errors.Credentials, credentials.GCSCredential,
+                              'gorka')
