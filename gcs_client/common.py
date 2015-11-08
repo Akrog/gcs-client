@@ -18,8 +18,8 @@ from __future__ import absolute_import
 from functools import wraps
 import math
 import random
+import six
 import time
-import types
 
 from apiclient import discovery
 from apiclient import errors
@@ -71,7 +71,7 @@ class GCS(object):
                              GCS.  If None is passed retries will be disabled.
         :type retry_params: RetryParams or NoneType
         """
-        assert isinstance(retry_params, (types.NoneType, RetryParams))
+        assert isinstance(retry_params, (type(None), RetryParams))
         self._retry_params = retry_params
 
     @property
@@ -123,7 +123,10 @@ class Fillable(GCS):
             if hasattr(self, k) and getattr(self, k):
                 continue
             if isinstance(v, dict) and len(v) == 1:
-                v = v.values()[0]
+                if six.PY3:
+                    v = tuple(v.values())[0]
+                else:
+                    v = v.values()[0]
             setattr(self, k, v)
 
     def _get_data(self):
@@ -260,7 +263,7 @@ def retry(param='_retry_params', error_codes=DEFAULT_RETRY_CODES):
         @wraps(f)
         def wrapped(self, *args, **kwargs):
             # If retry configuration is none or a RetryParams instance, use it
-            if isinstance(param, (types.NoneType, RetryParams)):
+            if isinstance(param, (type(None), RetryParams)):
                 retry_params = param
             # If it's an attribute name try to retrieve it
             else:

@@ -15,12 +15,23 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read().replace('.. :changelog:', '')
 
 requirements = [
-    # TODO: put package requirements here
+    'google-api-python-client==1.4.2',
+    'requests[security]'
 ]
 
 test_requirements = [
-    # TODO: put package test requirements here
+    'bumpversion==0.5.3',
+    'wheel==0.23.0',
+    'watchdog==0.8.3',
+    'flake8==2.4.1',
+    'tox==2.1.1',
+    'coverage==4.0',
+    'Sphinx==1.3.1',
+    'mock==1.3.0'
 ]
+
+import os
+os.environ['no_import_errors'] = '1'
 
 import gcs_client
 
@@ -47,7 +58,6 @@ setup(
         'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
         "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',

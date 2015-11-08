@@ -379,7 +379,8 @@ class TestRetryParams(unittest.TestCase):
     def test_set_default_using_positional_args(self):
         """Test that get_default always returns the same instance."""
         first_params = common.RetryParams.get_default()
-        first_params_values = vars(common.RetryParams.get_default()).values()
+        first_params_values = tuple(
+            vars(common.RetryParams.get_default()).values())
         new_params = (1, 2, 3, 4, False)
         common.RetryParams.set_default(*new_params)
         second_params = common.RetryParams.get_default()

@@ -40,7 +40,7 @@ class TestBuffer(unittest.TestCase):
 
     def test_write(self):
         """Test basic write method."""
-        data = '0' * 50 + '1' * 50
+        data = b'0' * 50 + b'1' * 50
         self.buf.write(data)
         self.assertEqual(len(data), len(self.buf))
         self.assertEqual(1, len(self.buf._queue))
@@ -48,9 +48,9 @@ class TestBuffer(unittest.TestCase):
 
     def test_multiple_writes(self):
         """Test multiple writes."""
-        data = '0' * 50
+        data = b'0' * 50
         self.buf.write(data)
-        data2 = data + '1' * 50
+        data2 = data + b'1' * 50
         self.buf.write(data2)
         self.assertEqual(len(data) + len(data2), len(self.buf))
         self.assertEqual(2, len(self.buf._queue))
@@ -59,9 +59,9 @@ class TestBuffer(unittest.TestCase):
 
     def test_read(self):
         """Test basic read all method."""
-        data = '0' * 50
+        data = b'0' * 50
         self.buf.write(data)
-        data2 = '1' * 50
+        data2 = b'1' * 50
         self.buf.write(data2)
         read = self.buf.read()
         self.assertEqual(0, len(self.buf))
@@ -70,9 +70,9 @@ class TestBuffer(unittest.TestCase):
 
     def test_read_partial(self):
         """Test complex read overlapping reads from different 'chunks'."""
-        data = '0' * 20 + '1' * 20
+        data = b'0' * 20 + b'1' * 20
         self.buf.write(data)
-        data2 = '2' * 50
+        data2 = b'2' * 50
         self.buf.write(data2)
 
         read = self.buf.read(20)
@@ -93,9 +93,9 @@ class TestBuffer(unittest.TestCase):
 
     def test_clear(self):
         """Test clear method."""
-        data = '0' * 50
+        data = b'0' * 50
         self.buf.write(data)
-        data2 = '1' * 50
+        data2 = b'1' * 50
         self.buf.write(data2)
         self.assertEqual(len(data) + len(data2), len(self.buf))
         self.buf.clear()
@@ -243,7 +243,7 @@ class TestObjFile(unittest.TestCase):
     def test_close_write_file(self, send_mock):
         f = self._open('w')
         f.close()
-        send_mock.assert_called_once_with('', 0, finalize=True)
+        send_mock.assert_called_once_with(b'', 0, finalize=True)
         send_mock.reset_mock()
         self.assertTrue(f.closed)
         # A second close call will do nothing
@@ -275,7 +275,7 @@ class TestObjFile(unittest.TestCase):
     @mock.patch('requests.get')
     def test_read_all_fits_in_1_chunk(self, get_mock):
         f = self._open('r')
-        expected_data = '0' * (f._chunksize - 1)
+        expected_data = b'0' * (f._chunksize - 1)
         get_mock.side_effect = [mock.Mock(status_code=200, headers={},
                                           content=expected_data)]
         data = f.read()
@@ -295,7 +295,7 @@ class TestObjFile(unittest.TestCase):
     @mock.patch('requests.get')
     def test_read_all_multiple_chunks(self, get_mock):
         f = self._open('r')
-        expected_data = '0' * ((f._chunksize - 1) * 2)
+        expected_data = b'0' * ((f._chunksize - 1) * 2)
         get_mock.side_effect = [
             mock.Mock(status_code=206, content=expected_data[:f._chunksize]),
             mock.Mock(status_code=200, content=expected_data[f._chunksize:])]
@@ -318,7 +318,7 @@ class TestObjFile(unittest.TestCase):
     @mock.patch('requests.get')
     def test_read_all_multiple_chunks_exact_size_no_header(self, get_mock):
         f = self._open('r')
-        expected_data = '0' * (f._chunksize * 2)
+        expected_data = b'0' * (f._chunksize * 2)
         get_mock.side_effect = [
             mock.Mock(status_code=206, content=expected_data[:f._chunksize]),
             mock.Mock(status_code=206, content=expected_data[f._chunksize:]),
@@ -344,7 +344,7 @@ class TestObjFile(unittest.TestCase):
     def test_read_all_multiple_chunks_exact_size_with_header(self, get_mock):
         f = self._open('r')
         offsets = ((0, f._chunksize), (f._chunksize, 2 * f._chunksize))
-        expected_data = '0' * (f._chunksize * 2)
+        expected_data = b'0' * (f._chunksize * 2)
         ranges = [{'Content-Range': 'bytes=%s-%s/%s' % (o[0], o[1] - 1,
                                                         offsets[-1][1])}
                   for o in offsets]
@@ -372,11 +372,11 @@ class TestObjFile(unittest.TestCase):
     def test_read_size_multiple_chunks(self, get_mock):
         f = self._open('r')
         offsets = ((0, f._chunksize), (f._chunksize, 2 * f._chunksize))
-        expected_data = '0' * ((f._chunksize - 1) * 2)
+        expected_data = b'0' * ((f._chunksize - 1) * 2)
         get_mock.side_effect = [
             mock.Mock(status_code=206, content=expected_data[:f._chunksize]),
             mock.Mock(status_code=200, content=expected_data[f._chunksize:])]
-        size = f._chunksize / 4
+        size = int(f._chunksize / 4)
         data = f.read(size)
         self.assertEqual(expected_data[:size], data)
 

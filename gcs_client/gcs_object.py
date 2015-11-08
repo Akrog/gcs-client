@@ -17,6 +17,7 @@ from __future__ import absolute_import
 
 import collections
 import os
+import six
 
 import requests
 
@@ -309,6 +310,8 @@ class _Buffer(object):
 
     def write(self, data):
         if data:
+            if six.PY3 and isinstance(data, six.string_types):
+                data = data.encode()
             self._queue.append(memoryview(data))
             self._size += len(data)
 

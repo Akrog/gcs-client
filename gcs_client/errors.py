@@ -15,7 +15,7 @@
 
 from __future__ import absolute_import
 
-import httplib
+from six.moves import http_client as httplib
 import sys
 
 
