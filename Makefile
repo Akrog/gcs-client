@@ -55,7 +55,7 @@ test-all:
 	tox
 
 coverage:
-	coverage run --source gcs_client setup.py test
+	coverage run --branch --omit=gcs_client/constants/* --source gcs_client setup.py test
 	coverage report -m
 	coverage html
 	$(BROWSER) htmlcov/index.html
