@@ -28,11 +28,26 @@ import gcs_client
 
 class TestGcs_client(unittest.TestCase):
 
-    def setUp(self):
-        pass
+    def test_bucket_accessible(self):
+        from gcs_client import bucket
+        self.assertIs(bucket.Bucket, gcs_client.Bucket)
 
-    def test_something(self):
-        pass
+    def test_project_accessible(self):
+        from gcs_client import project
+        self.assertIs(project.Project, gcs_client.Project)
 
-    def tearDown(self):
-        pass
+    def test_credentials_accessible(self):
+        from gcs_client import credentials
+        self.assertIs(credentials.Credentials, gcs_client.Credentials)
+
+    def test_object_accessible(self):
+        from gcs_client import gcs_object
+        self.assertIs(gcs_object.Object, gcs_client.Object)
+
+    def test_retry_params_accessible(self):
+        from gcs_client import common
+        self.assertIs(common.RetryParams, gcs_client.RetryParams)
+
+    def test_errors_accessible(self):
+        from gcs_client import errors
+        self.assertIs(errors, gcs_client.errors)
