@@ -258,7 +258,7 @@ texinfo_documents = [
      u'gcs-client Documentation',
      u'Gorka Eguileor',
      'gcs-client',
-     'One line description of project.',
+     'Google Cloud Storage Python Client.',
      'Miscellaneous'),
 ]
 
