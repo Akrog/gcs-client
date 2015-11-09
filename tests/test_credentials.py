@@ -89,4 +89,70 @@ class TestErrors(unittest.TestCase):
         file_mock.return_value.read.side_effect = IOError()
         with mock.patch.object(moves.builtins, 'open', file_mock):
             self.assertRaises(errors.Credentials, credentials.GCSCredential,
-                              'gorka')
+                              'filename')
+
+    def _get_access_token(self, http=None):
+        # Original get_access_token would set access_token attribute
+        call_num = getattr(self, 'call_num', 0) + 1
+        self.access_token = 'access_token' + str(call_num)
+        self.call_num = call_num
+
+    @mock.patch.object(credentials.GCSCredential, 'access_token_expired',
+                       mock.PropertyMock(return_value=False))
+    @mock.patch.object(credentials.GCSCredential, 'get_access_token',
+                       side_effect=_get_access_token, autospec=True)
+    @mock.patch.object(credentials.GCSCredential, '__init__',
+                       return_value=None)
+    def test_authorization_one_call(self, mock_init, mock_get_token):
+        """Test authorization property calls get_access_token."""
+        creds = credentials.GCSCredential('file')
+        # On real init we would have had access_token set to None
+        creds.access_token = None
+
+        auth = creds.authorization
+        self.assertEqual('Bearer access_token1', auth)
+        mock_get_token.assert_called_once_with(creds)
+
+    @mock.patch.object(credentials.GCSCredential, 'access_token_expired',
+                       mock.PropertyMock(return_value=False))
+    @mock.patch.object(credentials.GCSCredential, 'get_access_token',
+                       side_effect=_get_access_token, autospec=True)
+    @mock.patch.object(credentials.GCSCredential, '__init__',
+                       return_value=None)
+    def test_authorization_multiple_accesses(self, mock_init, mock_get_token):
+        """Test authorization property calls get_access_token only once."""
+        creds = credentials.GCSCredential('file')
+        # On real init we would have had access_token set to None
+        creds.access_token = None
+
+        auth = creds.authorization
+        mock_get_token.reset_mock()
+        # Second access to authorization property shouldn't call
+        # get_access_token
+        auth2 = creds.authorization
+        self.assertEqual('Bearer access_token1', auth2)
+        self.assertEqual(auth, auth2)
+        self.assertFalse(mock_get_token.called)
+
+    @mock.patch.object(credentials.GCSCredential, 'access_token_expired',
+                       mock.PropertyMock(side_effect=[True, False]))
+    @mock.patch.object(credentials.GCSCredential, 'get_access_token',
+                       side_effect=_get_access_token, autospec=True)
+    @mock.patch.object(credentials.GCSCredential, '__init__',
+                       return_value=None)
+    def test_authorization_multiple_calls(self, mock_init, mock_get_token):
+        """Test authorization calls get_access_token on expiration."""
+        creds = credentials.GCSCredential('file')
+        # On real init we would have had access_token set to None
+        creds.access_token = None
+
+        auth = creds.authorization
+        self.assertEqual('Bearer access_token1', auth)
+        # Second access to authorization property should call get_access_token
+        auth = creds.authorization
+        self.assertEqual('Bearer access_token2', auth)
+        self.assertEqual(2, mock_get_token.call_count)
+        # Third access will not trigger another call to get_access_token
+        auth2 = creds.authorization
+        self.assertEqual(auth, auth2)
+        self.assertEqual(2, mock_get_token.call_count)

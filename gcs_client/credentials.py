@@ -56,3 +56,10 @@ class GCSCredential(oauth2_client.SignedJwtAssertionCredentials):
 
         url = self.common_url + self.scope_urls[scope]
         super(GCSCredential, self).__init__(email, key_data, url)
+
+    @property
+    def authorization(self):
+        """Authorization header value for GCS requests."""
+        if not self.access_token or self.access_token_expired:
+            self.get_access_token()
+        return 'Bearer ' + self.access_token

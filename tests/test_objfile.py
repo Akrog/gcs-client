@@ -131,7 +131,7 @@ class TestObjFile(unittest.TestCase):
         access_token = 'access_token'
         chunk = gcs_object.DEFAULT_BLOCK_SIZE * 2
         creds = mock.Mock()
-        creds.get_access_token.return_value.access_token = access_token
+        creds.authorization = 'Bearer ' + access_token
         f = gcs_object.GCSObjFile(mock.sentinel.bucket, mock.sentinel.name,
                                   creds, 'r', chunk, mock.sentinel.size,
                                   mock.sentinel.retry_params)
@@ -148,7 +148,6 @@ class TestObjFile(unittest.TestCase):
         self.assertFalse(f.closed)
         self.assertEqual(0, f.tell())
 
-        creds.get_access_token.assert_called_once_with()
         self.assertEqual(1, head_mock.call_count)
         location = head_mock.call_args[0][0]
         self.assertIn(str(mock.sentinel.bucket), location)
@@ -164,7 +163,7 @@ class TestObjFile(unittest.TestCase):
 
         self.access_token = 'access_token'
         creds = mock.Mock()
-        creds.get_access_token.return_value.access_token = self.access_token
+        creds.authorization = 'Bearer ' + self.access_token
         with mock.patch(method, **{'return_value.status_code': 200}):
             f = gcs_object.GCSObjFile(mock.sentinel.bucket, mock.sentinel.name,
                                       creds, mode)
@@ -208,7 +207,7 @@ class TestObjFile(unittest.TestCase):
     def test_init_write(self, post_mock):
         access_token = 'access_token'
         creds = mock.Mock()
-        creds.get_access_token.return_value.access_token = access_token
+        creds.authorization = 'Bearer ' + access_token
         f = gcs_object.GCSObjFile(mock.sentinel.bucket, mock.sentinel.name,
                                   creds, 'w',
                                   gcs_object.DEFAULT_BLOCK_SIZE * 2,
@@ -226,7 +225,6 @@ class TestObjFile(unittest.TestCase):
         self.assertFalse(f.closed)
         self.assertEqual(0, f.tell())
 
-        creds.get_access_token.assert_called_once_with()
         self.assertEqual(1, post_mock.call_count)
         location = post_mock.call_args[0][0]
         self.assertIn(str(mock.sentinel.bucket), location)

@@ -139,11 +139,9 @@ class GCSObjFile(object):
 
     @common.retry
     def _open(self):
-        auth_token = self._credentials.get_access_token().access_token
-        authorization = 'Bearer ' + auth_token
         if self._is_readable():
             self._location = self.URL % (self.bucket, self.name)
-            headers = {'Authorization': authorization}
+            headers = {'Authorization': self._credentials.authorization}
             r = requests.head(self._location, headers=headers)
 
         else:
@@ -151,7 +149,7 @@ class GCSObjFile(object):
             initial_url = self.URL_UPLOAD % self.bucket
             params = {'uploadType': 'resumable', 'name': self.name}
             headers = {'x-goog-resumable': 'start',
-                       'Authorization': authorization,
+                       'Authorization': self._credentials.authorization,
                        'Content-type': 'application/octet-stream'}
             r = requests.post(initial_url, params=params, headers=headers)
             if r.status_code == requests.codes.ok:
@@ -213,8 +211,7 @@ class GCSObjFile(object):
             size = self.size if finalize else '*'
             data_range = 'bytes %s-%s/%s' % (begin, end, size)
 
-        auth_token = self._credentials.get_access_token().access_token
-        headers = {'Authorization': 'Bearer ' + auth_token,
+        headers = {'Authorization': self._credentials.authorization,
                    'Content-Range': data_range}
         r = requests.put(self._location, data=data, headers=headers)
 
@@ -257,9 +254,8 @@ class GCSObjFile(object):
         if not size:
             return ''
 
-        auth_token = self._credentials.get_access_token().access_token
         end = begin + size - 1
-        headers = {'Authorization': 'Bearer ' + auth_token,
+        headers = {'Authorization': self._credentials.authorization,
                    'Range': 'bytes=%d-%d' % (begin, end)}
         params = {'alt': 'media'}
         r = requests.get(self._location, params=params, headers=headers)
