@@ -30,14 +30,10 @@ test_requirements = [
     'mock==1.3.0'
 ]
 
-import os
-os.environ['no_import_errors'] = '1'
-
-import gcs_client
 
 setup(
     name='gcs-client',
-    version=gcs_client.__version__,
+    version='0.0.1',
     description="Google Cloud Storage Python client",
     long_description=readme + '\n\n' + history,
     author="Gorka Eguileor",
