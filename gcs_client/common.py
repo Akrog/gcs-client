@@ -48,7 +48,7 @@ class GCS(object):
         """Base GCS initialization.
 
         :param credentials: credentials to use for accessing GCS
-        :type credentials: GCSCredential
+        :type credentials: Credentials
         :param retry_params: retry configuration used for communications with
                              GCS.  If not specified RetryParams.getdefault()
                              will be used.

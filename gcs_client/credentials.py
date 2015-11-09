@@ -23,7 +23,7 @@ from gcs_client.constants import scope as gcs_scope
 from gcs_client import errors
 
 
-class GCSCredential(oauth2_client.SignedJwtAssertionCredentials):
+class Credentials(oauth2_client.SignedJwtAssertionCredentials):
     common_url = 'https://www.googleapis.com/auth/'
     scope_urls = {
         gcs_scope.READER: 'devstorage.read_only',
@@ -55,7 +55,7 @@ class GCSCredential(oauth2_client.SignedJwtAssertionCredentials):
                     'Non JSON private key needs email, but it was missing')
 
         url = self.common_url + self.scope_urls[scope]
-        super(GCSCredential, self).__init__(email, key_data, url)
+        super(Credentials, self).__init__(email, key_data, url)
 
     @property
     def authorization(self):

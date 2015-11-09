@@ -18,7 +18,7 @@
 test_credentials
 ----------------------------------
 
-Tests GCSCredentials class.
+Tests Credentials class.
 """
 
 import unittest
@@ -35,7 +35,7 @@ class TestErrors(unittest.TestCase):
     def test_init_wrong_scope(self):
         """Test init wrong scope."""
         self.assertRaises(errors.Credentials,
-                          credentials.GCSCredential, 'priv.json', scope='fake')
+                          credentials.Credentials, 'priv.json', scope='fake')
 
     @mock.patch.object(credentials.oauth2_client.SignedJwtAssertionCredentials,
                        '__init__')
@@ -43,7 +43,7 @@ class TestErrors(unittest.TestCase):
         """Test init with non existent file."""
         with mock.patch.object(moves.builtins, 'open', side_effect=IOError()):
             self.assertRaises(errors.Credentials,
-                              credentials.GCSCredential, 'key.json')
+                              credentials.Credentials, 'key.json')
             self.assertFalse(mock_creds.called)
 
     @mock.patch.object(credentials.oauth2_client.SignedJwtAssertionCredentials,
@@ -56,7 +56,7 @@ class TestErrors(unittest.TestCase):
 
         file_mock = mock.mock_open(read_data=file_data)
         with mock.patch.object(moves.builtins, 'open', file_mock):
-            credentials.GCSCredential('key.json')
+            credentials.Credentials('key.json')
             mock_creds.assert_called_once_with(email, pk, mock.ANY)
 
     @mock.patch.object(credentials.oauth2_client.SignedJwtAssertionCredentials,
@@ -67,7 +67,7 @@ class TestErrors(unittest.TestCase):
         file_mock = mock.mock_open(read_data=file_data)
         with mock.patch.object(moves.builtins, 'open', file_mock):
             self.assertRaises(errors.Credentials,
-                              credentials.GCSCredential, 'key.json')
+                              credentials.Credentials, 'key.json')
             self.assertFalse(mock_creds.called)
 
     @mock.patch.object(credentials.oauth2_client.SignedJwtAssertionCredentials,
@@ -77,7 +77,7 @@ class TestErrors(unittest.TestCase):
         file_data = 'non json file data'
         file_mock = mock.mock_open(read_data=file_data)
         with mock.patch.object(moves.builtins, 'open', file_mock):
-            credentials.GCSCredential('key.json', mock.sentinel.email)
+            credentials.Credentials('key.json', mock.sentinel.email)
             mock_creds.assert_called_once_with(mock.sentinel.email, file_data,
                                                mock.ANY)
 
@@ -88,7 +88,7 @@ class TestErrors(unittest.TestCase):
         file_mock = mock.mock_open()
         file_mock.return_value.read.side_effect = IOError()
         with mock.patch.object(moves.builtins, 'open', file_mock):
-            self.assertRaises(errors.Credentials, credentials.GCSCredential,
+            self.assertRaises(errors.Credentials, credentials.Credentials,
                               'filename')
 
     def _get_access_token(self, http=None):
@@ -97,15 +97,15 @@ class TestErrors(unittest.TestCase):
         self.access_token = 'access_token' + str(call_num)
         self.call_num = call_num
 
-    @mock.patch.object(credentials.GCSCredential, 'access_token_expired',
+    @mock.patch.object(credentials.Credentials, 'access_token_expired',
                        mock.PropertyMock(return_value=False))
-    @mock.patch.object(credentials.GCSCredential, 'get_access_token',
+    @mock.patch.object(credentials.Credentials, 'get_access_token',
                        side_effect=_get_access_token, autospec=True)
-    @mock.patch.object(credentials.GCSCredential, '__init__',
+    @mock.patch.object(credentials.Credentials, '__init__',
                        return_value=None)
     def test_authorization_one_call(self, mock_init, mock_get_token):
         """Test authorization property calls get_access_token."""
-        creds = credentials.GCSCredential('file')
+        creds = credentials.Credentials('file')
         # On real init we would have had access_token set to None
         creds.access_token = None
 
@@ -113,15 +113,15 @@ class TestErrors(unittest.TestCase):
         self.assertEqual('Bearer access_token1', auth)
         mock_get_token.assert_called_once_with(creds)
 
-    @mock.patch.object(credentials.GCSCredential, 'access_token_expired',
+    @mock.patch.object(credentials.Credentials, 'access_token_expired',
                        mock.PropertyMock(return_value=False))
-    @mock.patch.object(credentials.GCSCredential, 'get_access_token',
+    @mock.patch.object(credentials.Credentials, 'get_access_token',
                        side_effect=_get_access_token, autospec=True)
-    @mock.patch.object(credentials.GCSCredential, '__init__',
+    @mock.patch.object(credentials.Credentials, '__init__',
                        return_value=None)
     def test_authorization_multiple_accesses(self, mock_init, mock_get_token):
         """Test authorization property calls get_access_token only once."""
-        creds = credentials.GCSCredential('file')
+        creds = credentials.Credentials('file')
         # On real init we would have had access_token set to None
         creds.access_token = None
 
@@ -134,15 +134,15 @@ class TestErrors(unittest.TestCase):
         self.assertEqual(auth, auth2)
         self.assertFalse(mock_get_token.called)
 
-    @mock.patch.object(credentials.GCSCredential, 'access_token_expired',
+    @mock.patch.object(credentials.Credentials, 'access_token_expired',
                        mock.PropertyMock(side_effect=[True, False]))
-    @mock.patch.object(credentials.GCSCredential, 'get_access_token',
+    @mock.patch.object(credentials.Credentials, 'get_access_token',
                        side_effect=_get_access_token, autospec=True)
-    @mock.patch.object(credentials.GCSCredential, '__init__',
+    @mock.patch.object(credentials.Credentials, '__init__',
                        return_value=None)
     def test_authorization_multiple_calls(self, mock_init, mock_get_token):
         """Test authorization calls get_access_token on expiration."""
-        creds = credentials.GCSCredential('file')
+        creds = credentials.Credentials('file')
         # On real init we would have had access_token set to None
         creds.access_token = None
 
