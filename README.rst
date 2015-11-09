@@ -8,6 +8,10 @@ GCS-Client
 .. image:: https://img.shields.io/pypi/v/gcs-client.svg
         :target: https://pypi.python.org/pypi/gcs-client
 
+.. image:: https://coveralls.io/repos/Akrog/gcs-client/badge.svg
+         :target: https://coveralls.io/github/Akrog/gcs-client
+
+
 Google Cloud Storage Python Client
 
 * Apache 2.0 License

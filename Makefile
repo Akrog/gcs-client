@@ -20,6 +20,7 @@ help:
 	@echo "test - run tests quickly with the default Python"
 	@echo "test-all - run tests on every Python version with tox"
 	@echo "coverage - check code coverage quickly with the default Python"
+	@echo "coverage-html - check code coverage (HTML) quickly with the default Python"
 	@echo "docs - generate Sphinx HTML documentation, including API docs"
 	@echo "release - package and upload a release"
 	@echo "dist - package"
@@ -55,6 +56,10 @@ test-all:
 	tox
 
 coverage:
+	coverage run --branch --omit=gcs_client/constants/* --source gcs_client setup.py test
+	coverage report -m
+
+coverage-html:
 	coverage run --branch --omit=gcs_client/constants/* --source gcs_client setup.py test
 	coverage report -m
 	coverage html
