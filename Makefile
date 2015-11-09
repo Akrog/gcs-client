@@ -22,6 +22,7 @@ help:
 	@echo "coverage - check code coverage quickly with the default Python"
 	@echo "coverage-html - check code coverage (HTML) quickly with the default Python"
 	@echo "docs - generate Sphinx HTML documentation, including API docs"
+	@echo "register - register package in pypi"
 	@echo "release - package and upload a release"
 	@echo "dist - package"
 	@echo "install - install the package to the active Python's site-packages"
@@ -75,6 +76,9 @@ docs:
 
 servedocs: docs
 	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
+
+register:
+	python setup.py register
 
 release: clean
 	python setup.py sdist upload
