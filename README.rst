@@ -11,6 +11,10 @@ GCS-Client
 .. image:: https://coveralls.io/repos/Akrog/gcs-client/badge.svg
          :target: https://coveralls.io/github/Akrog/gcs-client
 
+.. image:: https://readthedocs.org/projects/gcs-client/badge/?version=latest
+         :target: http://gcs-client.readthedocs.org/en/latest/?badge=latest
+         :alt: Documentation Status
+
 
 Google Cloud Storage Python Client
 
