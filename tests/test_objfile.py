@@ -21,6 +21,8 @@ test_objfile
 Tests for GCSObjFile class and auxiliary classes.
 """
 
+import os
+import six
 import unittest
 
 import mock
@@ -414,3 +416,65 @@ class TestObjFile(unittest.TestCase):
             data = f._get_data(0)
             self.assertEqual('', data)
             self.assertFalse(get_mock.called)
+
+    def _check_seek(self, offset, whence, expected_initial=None):
+        with mock.patch('requests.get') as get_mock:
+            block = gcs_object.DEFAULT_BLOCK_SIZE
+            f = self._open('r')
+            f.size = 4 * block
+            if expected_initial is None:
+                expected_initial = f.size
+            expected_data = b'0' * block
+            get_mock.return_value = mock.Mock(status_code=206,
+                                              content=expected_data)
+            f.read(2 * block)
+            f.seek(offset, whence)
+            self.assertEqual(0, len(f._buffer))
+            f.read(block)
+
+            offsets = ((0, block), (block, 2 * block),
+                       (expected_initial, expected_initial + block))
+            for i in range(len(offsets)):
+                self._check_get_call(get_mock, i, offsets[i][0], offsets[i][1])
+
+            f.close()
+
+    def test_seek_read_set(self):
+        self._check_seek(10, os.SEEK_SET, 10)
+
+    def test_seek_read_set_beyond_bof(self):
+        self._check_seek(-10, os.SEEK_SET, 0)
+
+    def test_seek_read_set_beyond_eof(self):
+        self._check_seek(six.MAXSIZE, os.SEEK_SET)
+
+    def test_seek_read_cur(self):
+        self._check_seek(10, os.SEEK_CUR,
+                         10 + (2 * gcs_object.DEFAULT_BLOCK_SIZE))
+
+    def test_seek_read_cur_negative(self):
+        self._check_seek(-10, os.SEEK_CUR,
+                         -10 + (2 * gcs_object.DEFAULT_BLOCK_SIZE))
+
+    def test_seek_read_cur_beyond_bof(self):
+        self._check_seek(-3 * gcs_object.DEFAULT_BLOCK_SIZE, os.SEEK_CUR, 0)
+
+    def test_seek_read_cur_beyond_eof(self):
+        self._check_seek(six.MAXSIZE, os.SEEK_CUR,
+                         4 * gcs_object.DEFAULT_BLOCK_SIZE)
+
+    def test_seek_read_end_negative(self):
+        self._check_seek(-10, os.SEEK_END,
+                         -10 + (4 * gcs_object.DEFAULT_BLOCK_SIZE))
+
+    def test_seek_read_end_beyond_bof(self):
+        self._check_seek(-six.MAXSIZE, os.SEEK_END, 0)
+
+    def test_seek_read_end_beyond_eof(self):
+        self._check_seek(six.MAXSIZE, os.SEEK_END,
+                         4 * gcs_object.DEFAULT_BLOCK_SIZE)
+
+    @mock.patch('requests.get')
+    def test_seek_read_wrong_whence(self, get_mock):
+        with self._open('r') as f:
+            self.assertRaises(ValueError, f.seek, 0, -1)

@@ -168,12 +168,12 @@ class GCSObjFile(object):
 
     def seek(self, offset, whence=os.SEEK_SET):
         self._check_is_open()
-        self._check_is_redable('seek')
+        self._check_is_readable('seek')
 
         if whence == os.SEEK_SET:
             position = offset
         elif whence == os.SEEK_CUR:
-            position += offset
+            position = self._offset + offset
         elif whence == os.SEEK_END:
             position = self.size + offset
         else:
