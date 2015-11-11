@@ -13,8 +13,13 @@ python:
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install: pip install -r requirements.txt -r requirements_dev.txt python-coveralls
 
-# command to run tests, e.g. python setup.py test
-script: make coverage
+# Run style checking before running tests
+before_script:
+    - make lint
+
+# We run tests and generate coverage data
+script:
+    - make coverage
 
 after_success:
     - coveralls
