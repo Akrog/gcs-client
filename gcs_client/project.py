@@ -21,7 +21,7 @@ from gcs_client.constants import projection as gcs_projection
 from gcs_client.constants import storage_class
 
 
-class Project(common.GCS):
+class Project(common.Listable):
     """GCS Project Object representation."""
 
     _required_attributes = common.GCS._required_attributes + ['project_id']
@@ -42,28 +42,15 @@ class Project(common.GCS):
             return None
         return self.project_id + '.appspot.com'
 
-    @common.is_complete
-    @common.retry
-    @common.convert_exception
-    def list(self, fields_to_return=None, max_results=None,
-             projection=gcs_projection.SIMPLE):
-        buckets = self._service.buckets()
+    @property
+    def _child_info(self):
+        return (self._service.buckets, bucket.Bucket)
 
-        req = buckets.list(project=self.project_id,
-                           fields=fields_to_return,
-                           maxResults=max_results)
-
-        bucket_list = []
-        while req:
-            resp = req.execute()
-            items = map(
-                lambda b: bucket.Bucket.obj_from_data(b, self.credentials,
-                                                      self.retry_params),
-                resp.get('items', []))
-            bucket_list.extend(items)
-            req = buckets.list_next(req, resp)
-
-        return bucket_list
+    def list(self, fields=None, maxResults=None, projection=None, prefix=None,
+             pageToken=None):
+        return self._list(project=self.project_id, fields=fields,
+                          maxResults=maxResults, projection=projection,
+                          prefix=prefix, pageToken=pageToken)
 
     @common.is_complete
     @common.retry

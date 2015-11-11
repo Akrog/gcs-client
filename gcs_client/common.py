@@ -15,6 +15,7 @@
 
 from __future__ import absolute_import
 
+import abc
 from functools import wraps
 import math
 import random
@@ -310,3 +311,39 @@ def convert_exception(f):
         except errors.HttpError as exc:
             raise gcs_errors.create_http_exception(exc.resp['status'], exc)
     return wrapped
+
+
+class Listable(GCS):
+    __metaclass__ = abc.ABCMeta
+
+    @is_complete
+    @retry
+    @convert_exception
+    def _list(self, **kwargs):
+        # Remove all args that are None
+        kwargs = {k: v for k, v in kwargs.items() if v is not None}
+        # Get child classes
+        gcs_child_cls, child_cls = self._child_info
+        # Instantiate the GCS service specific class
+        gcs_child = gcs_child_cls()
+
+        # Retrieve the list from GCS
+        req = gcs_child.list(**kwargs)
+
+        child_list = []
+        while req:
+            resp = req.execute()
+            # Transform data from GCS into classes
+            items = map(lambda b: child_cls.obj_from_data(b, self.credentials,
+                                                          self.retry_params),
+                        resp.get('items', []))
+            child_list.extend(items)
+            req = gcs_child.list_next(req, resp)
+
+        return child_list
+
+    list = _list
+
+    @abc.abstractproperty
+    def _child_info(self):
+        raise NotImplementedError

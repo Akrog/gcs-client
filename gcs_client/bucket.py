@@ -16,11 +16,10 @@
 from __future__ import absolute_import
 
 from gcs_client import common
-from gcs_client.constants import projection as gcs_projection
 from gcs_client import gcs_object
 
 
-class Bucket(common.Fillable):
+class Bucket(common.Fillable, common.Listable):
     """GCS Bucket Object representation."""
 
     _required_attributes = common.GCS._required_attributes + ['name']
@@ -40,27 +39,16 @@ class Bucket(common.Fillable):
         req = self._service.buckets().get(bucket=self.name)
         return req.execute()
 
-    @common.is_complete
-    @common.retry
-    @common.convert_exception
-    def list(self, prefix=None, maxResults=None, versions=False,
-             delimiter=None, projection=gcs_projection.SIMPLE):
-        objs = self._service.objects()
-        req = objs.list(bucket=self.name, delimiter=delimiter, prefix=prefix,
-                        maxResults=maxResults, projection=projection,
-                        versions=versions)
+    @property
+    def _child_info(self):
+        return (self._service.objects, gcs_object.Object)
 
-        objects_list = []
-        while req:
-            resp = req.execute()
-            items = map(
-                lambda b: gcs_object.Object.obj_from_data(b, self.credentials,
-                                                          self.retry_params),
-                resp.get('items', []))
-            objects_list.extend(items)
-            req = objs.list_next(req, resp)
-
-        return objects_list
+    def list(self, prefix=None, maxResults=None, versions=None, delimiter=None,
+             projection=None, pageToken=None):
+        return self._list(bucket=self.name, prefix=prefix,
+                          maxResults=maxResults, versions=versions,
+                          delimiter=delimiter, projection=projection,
+                          pageToken=pageToken)
 
     @common.retry
     @common.convert_exception
