@@ -15,6 +15,9 @@
 
 from __future__ import absolute_import
 
+__all__ = ('BLOCK_MULTIPLE', 'DEFAULT_BLOCK_SIZE', 'Object', 'GCSObjFile')
+
+
 import collections
 import os
 import six

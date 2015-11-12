@@ -44,6 +44,16 @@ class TestGcs_client(unittest.TestCase):
         from gcs_client import gcs_object
         self.assertIs(gcs_object.Object, gcs_client.Object)
 
+    def test_file_object_accessible(self):
+        from gcs_client import gcs_object
+        self.assertIs(gcs_object.GCSObjFile, gcs_client.GCSObjFile)
+
+    def test_file_constants(self):
+        from gcs_client import gcs_object
+        self.assertIs(gcs_object.BLOCK_MULTIPLE, gcs_client.BLOCK_MULTIPLE)
+        self.assertIs(gcs_object.DEFAULT_BLOCK_SIZE,
+                      gcs_client.DEFAULT_BLOCK_SIZE)
+
     def test_retry_params_accessible(self):
         from gcs_client import common
         self.assertIs(common.RetryParams, gcs_client.RetryParams)
