@@ -142,14 +142,16 @@ class GCSObjFile(object):
 
     @common.retry
     def _open(self):
+        safe_bucket = requests.utils.quote(self.bucket, safe='')
+        safe_name = requests.utils.quote(self.name, safe='')
         if self._is_readable():
-            self._location = self.URL % (self.bucket, self.name)
+            self._location = self.URL % (safe_bucket, safe_name)
             headers = {'Authorization': self._credentials.authorization}
             r = requests.head(self._location, headers=headers)
 
         else:
             self.size = 0
-            initial_url = self.URL_UPLOAD % self.bucket
+            initial_url = self.URL_UPLOAD % safe_bucket
             params = {'uploadType': 'resumable', 'name': self.name}
             headers = {'x-goog-resumable': 'start',
                        'Authorization': self._credentials.authorization,

@@ -108,16 +108,19 @@ class TestBuffer(unittest.TestCase):
 class TestObjFile(unittest.TestCase):
     """Test Object File class."""
 
+    def setUp(self):
+        self.bucket = 'sentinel.bucket'
+        self.name = 'sentinel.name'
+
     def test_init_wrong_mode(self):
         """Test 'rw' mode is not supported."""
-        self.assertRaises(IOError, gcs_object.GCSObjFile, mock.sentinel.bucket,
-                          mock.sentinel.name, mock.sentinel.credentials, 'rw')
+        self.assertRaises(IOError, gcs_object.GCSObjFile, self.bucket,
+                          self.name, mock.sentinel.credentials, 'rw')
 
     def test_init_wrong_chunk(self):
         """Test chunksize must be 'rw' mode is not supported."""
-        self.assertRaises(AssertionError, gcs_object.GCSObjFile,
-                          mock.sentinel.bucket, mock.sentinel.name,
-                          mock.sentinel.credentials, 'r',
+        self.assertRaises(AssertionError, gcs_object.GCSObjFile, self.bucket,
+                          self.name, mock.sentinel.credentials, 'r',
                           gcs_object.BLOCK_MULTIPLE + 1)
 
     @mock.patch('requests.head', **{'return_value.status_code': 404})
@@ -125,8 +128,22 @@ class TestObjFile(unittest.TestCase):
         access_token = 'access_token'
         creds = mock.Mock()
         creds.get_access_token.return_value.access_token = access_token
-        self.assertRaises(IOError, gcs_object.GCSObjFile, mock.sentinel.bucket,
-                          mock.sentinel.name, creds, 'r')
+        self.assertRaises(IOError, gcs_object.GCSObjFile, self.bucket,
+                          self.name, creds, 'r')
+
+    @mock.patch('requests.head', **{'return_value.status_code': 404})
+    def test_init_read_quote_data(self, head_mock):
+        access_token = 'access_token'
+        creds = mock.Mock()
+        creds.get_access_token.return_value.access_token = access_token
+        name = 'var/log/messages.log'
+        bucket = '?mybucket'
+        expected_url = gcs_object.GCSObjFile.URL % ('%3Fmybucket',
+                                                    'var%2Flog%2Fmessages.log')
+
+        self.assertRaises(IOError, gcs_object.GCSObjFile, bucket, name, creds,
+                          'r')
+        head_mock.assert_called_once_with(expected_url, headers=mock.ANY)
 
     @mock.patch('requests.head', **{'return_value.status_code': 200})
     def test_init_read(self, head_mock):
@@ -134,11 +151,11 @@ class TestObjFile(unittest.TestCase):
         chunk = gcs_object.DEFAULT_BLOCK_SIZE * 2
         creds = mock.Mock()
         creds.authorization = 'Bearer ' + access_token
-        f = gcs_object.GCSObjFile(mock.sentinel.bucket, mock.sentinel.name,
-                                  creds, 'r', chunk, mock.sentinel.size,
+        f = gcs_object.GCSObjFile(self.bucket, self.name, creds, 'r', chunk,
+                                  mock.sentinel.size,
                                   mock.sentinel.retry_params)
-        self.assertEqual(mock.sentinel.bucket, f.bucket)
-        self.assertEqual(mock.sentinel.name, f.name)
+        self.assertEqual(self.bucket, f.bucket)
+        self.assertEqual(self.name, f.name)
         self.assertEqual(mock.sentinel.size, f.size)
         self.assertEqual(creds, f._credentials)
         self.assertEqual(mock.sentinel.retry_params, f._retry_params)
@@ -152,8 +169,8 @@ class TestObjFile(unittest.TestCase):
 
         self.assertEqual(1, head_mock.call_count)
         location = head_mock.call_args[0][0]
-        self.assertIn(str(mock.sentinel.bucket), location)
-        self.assertIn(str(mock.sentinel.name), location)
+        self.assertIn(self.bucket, location)
+        self.assertIn(self.name, location)
         headers = head_mock.call_args[1]['headers']
         self.assertEqual('Bearer ' + access_token, headers['Authorization'])
 
@@ -167,8 +184,7 @@ class TestObjFile(unittest.TestCase):
         creds = mock.Mock()
         creds.authorization = 'Bearer ' + self.access_token
         with mock.patch(method, **{'return_value.status_code': 200}):
-            f = gcs_object.GCSObjFile(mock.sentinel.bucket, mock.sentinel.name,
-                                      creds, mode)
+            f = gcs_object.GCSObjFile(self.bucket, self.name, creds, mode)
 
         return f
 
@@ -202,21 +218,20 @@ class TestObjFile(unittest.TestCase):
         access_token = 'access_token'
         creds = mock.Mock()
         creds.get_access_token.return_value.access_token = access_token
-        self.assertRaises(IOError, gcs_object.GCSObjFile, mock.sentinel.bucket,
-                          mock.sentinel.name, creds, 'w')
+        self.assertRaises(IOError, gcs_object.GCSObjFile, self.bucket,
+                          self.name, creds, 'w')
 
     @mock.patch('requests.post', **{'return_value.status_code': 200})
     def test_init_write(self, post_mock):
         access_token = 'access_token'
         creds = mock.Mock()
         creds.authorization = 'Bearer ' + access_token
-        f = gcs_object.GCSObjFile(mock.sentinel.bucket, mock.sentinel.name,
-                                  creds, 'w',
+        f = gcs_object.GCSObjFile(self.bucket, self.name, creds, 'w',
                                   gcs_object.DEFAULT_BLOCK_SIZE * 2,
                                   mock.sentinel.size,
                                   mock.sentinel.retry_params)
-        self.assertEqual(mock.sentinel.bucket, f.bucket)
-        self.assertEqual(mock.sentinel.name, f.name)
+        self.assertEqual(self.bucket, f.bucket)
+        self.assertEqual(self.name, f.name)
         self.assertEqual(0, f.size)
         self.assertEqual(creds, f._credentials)
         self.assertEqual(mock.sentinel.retry_params, f._retry_params)
@@ -229,9 +244,9 @@ class TestObjFile(unittest.TestCase):
 
         self.assertEqual(1, post_mock.call_count)
         location = post_mock.call_args[0][0]
-        self.assertIn(str(mock.sentinel.bucket), location)
+        self.assertIn(str(self.bucket), location)
         params = post_mock.call_args[1]['params']
-        self.assertIn(mock.sentinel.name, params.values())
+        self.assertIn(self.name, params.values())
         headers = post_mock.call_args[1]['headers']
         self.assertEqual('Bearer ' + access_token, headers['Authorization'])
 
