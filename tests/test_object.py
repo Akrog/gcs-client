@@ -144,5 +144,5 @@ class TestObject(unittest.TestCase):
         self.assertEqual(mock_file.return_value, obj.open(mock.sentinel.mode))
         mock_file.assert_called_once_with(mock.sentinel.bucket,
                                           mock.sentinel.name, creds,
-                                          mock.sentinel.mode, None, None,
+                                          mock.sentinel.mode, None,
                                           mock.sentinel.retry_params)

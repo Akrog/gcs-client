@@ -19,6 +19,7 @@ __all__ = ('BLOCK_MULTIPLE', 'DEFAULT_BLOCK_SIZE', 'Object', 'GCSObjFile')
 
 
 import collections
+import json
 import os
 import six
 
@@ -83,7 +84,7 @@ class Object(common.Fillable):
     @common.is_complete
     def open(self, mode='r', generation=None):
         return GCSObjFile(self.bucket, self.name, self._credentials, mode,
-                          None, None, self.retry_params)
+                          None, self.retry_params)
 
     def __str__(self):
         return '%s/%s' % (self.bucket, self.name)
@@ -99,7 +100,7 @@ class GCSObjFile(object):
     URL_UPLOAD = 'https://www.googleapis.com/upload/storage/v1/b/%s/o'
 
     def __init__(self, bucket, name, credentials, mode='r', chunksize=None,
-                 size=None, retry_params=None):
+                 retry_params=None):
         if mode not in ('r', 'w'):
             raise IOError('Only r or w modes supported')
         self.mode = mode
@@ -109,7 +110,6 @@ class GCSObjFile(object):
             'chunksize must be multiple of %s' % BLOCK_MULTIPLE
         self.name = name
         self.bucket = bucket
-        self.size = size
         self._offset = 0
         self._eof = False
         self._gcs_offset = 0
@@ -146,8 +146,14 @@ class GCSObjFile(object):
         safe_name = requests.utils.quote(self.name, safe='')
         if self._is_readable():
             self._location = self.URL % (safe_bucket, safe_name)
+            params = {'fields': 'size'}
             headers = {'Authorization': self._credentials.authorization}
-            r = requests.head(self._location, headers=headers)
+            r = requests.get(self._location, params=params, headers=headers)
+            if r.status_code == requests.codes.ok:
+                try:
+                    self.size = int(json.loads(r.content)['size'])
+                except Exception as exc:
+                    raise errors.Error('Bad data returned by GCS %s' % exc)
 
         else:
             self.size = 0

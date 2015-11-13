@@ -27,6 +27,7 @@ import unittest
 
 import mock
 
+from gcs_client import errors
 from gcs_client import gcs_object
 
 
@@ -123,16 +124,25 @@ class TestObjFile(unittest.TestCase):
                           self.name, mock.sentinel.credentials, 'r',
                           gcs_object.BLOCK_MULTIPLE + 1)
 
-    @mock.patch('requests.head', **{'return_value.status_code': 404})
-    def test_init_read_not_found(self, head_mock):
+    @mock.patch('requests.get', **{'return_value.status_code': 404})
+    def test_init_read_not_found(self, get_mock):
         access_token = 'access_token'
         creds = mock.Mock()
         creds.get_access_token.return_value.access_token = access_token
         self.assertRaises(IOError, gcs_object.GCSObjFile, self.bucket,
                           self.name, creds, 'r')
 
-    @mock.patch('requests.head', **{'return_value.status_code': 404})
-    def test_init_read_quote_data(self, head_mock):
+    @mock.patch('requests.get', **{'return_value.status_code': 200})
+    def test_init_read_non_json(self, get_mock):
+        get_mock.return_value.content = 'non_json'
+        access_token = 'access_token'
+        creds = mock.Mock()
+        creds.get_access_token.return_value.access_token = access_token
+        self.assertRaises(errors.Error, gcs_object.GCSObjFile, self.bucket,
+                          self.name, creds, 'r')
+
+    @mock.patch('requests.get', **{'return_value.status_code': 404})
+    def test_init_read_quote_data(self, get_mock):
         access_token = 'access_token'
         creds = mock.Mock()
         creds.get_access_token.return_value.access_token = access_token
@@ -143,20 +153,22 @@ class TestObjFile(unittest.TestCase):
 
         self.assertRaises(IOError, gcs_object.GCSObjFile, bucket, name, creds,
                           'r')
-        head_mock.assert_called_once_with(expected_url, headers=mock.ANY)
+        get_mock.assert_called_once_with(expected_url, headers=mock.ANY,
+                                         params={'fields': 'size'})
 
-    @mock.patch('requests.head', **{'return_value.status_code': 200})
-    def test_init_read(self, head_mock):
+    @mock.patch('requests.get', **{'return_value.status_code': 200})
+    def test_init_read(self, get_mock):
+        size = 123
+        get_mock.return_value.content = '{"size": "%s"}' % size
         access_token = 'access_token'
         chunk = gcs_object.DEFAULT_BLOCK_SIZE * 2
         creds = mock.Mock()
         creds.authorization = 'Bearer ' + access_token
         f = gcs_object.GCSObjFile(self.bucket, self.name, creds, 'r', chunk,
-                                  mock.sentinel.size,
                                   mock.sentinel.retry_params)
         self.assertEqual(self.bucket, f.bucket)
         self.assertEqual(self.name, f.name)
-        self.assertEqual(mock.sentinel.size, f.size)
+        self.assertEqual(size, f.size)
         self.assertEqual(creds, f._credentials)
         self.assertEqual(mock.sentinel.retry_params, f._retry_params)
         self.assertEqual(chunk, f._chunksize)
@@ -167,23 +179,24 @@ class TestObjFile(unittest.TestCase):
         self.assertFalse(f.closed)
         self.assertEqual(0, f.tell())
 
-        self.assertEqual(1, head_mock.call_count)
-        location = head_mock.call_args[0][0]
+        self.assertEqual(1, get_mock.call_count)
+        location = get_mock.call_args[0][0]
         self.assertIn(self.bucket, location)
         self.assertIn(self.name, location)
-        headers = head_mock.call_args[1]['headers']
+        headers = get_mock.call_args[1]['headers']
         self.assertEqual('Bearer ' + access_token, headers['Authorization'])
 
     def _open(self, mode):
         if mode == 'r':
-            method = 'requests.head'
+            method = 'requests.get'
         else:
             method = 'requests.post'
 
         self.access_token = 'access_token'
         creds = mock.Mock()
         creds.authorization = 'Bearer ' + self.access_token
-        with mock.patch(method, **{'return_value.status_code': 200}):
+        with mock.patch(method, **{'return_value.status_code': 200,
+                                   'return_value.content': '{"size": "123"}'}):
             f = gcs_object.GCSObjFile(self.bucket, self.name, creds, mode)
 
         return f
@@ -228,7 +241,6 @@ class TestObjFile(unittest.TestCase):
         creds.authorization = 'Bearer ' + access_token
         f = gcs_object.GCSObjFile(self.bucket, self.name, creds, 'w',
                                   gcs_object.DEFAULT_BLOCK_SIZE * 2,
-                                  mock.sentinel.size,
                                   mock.sentinel.retry_params)
         self.assertEqual(self.bucket, f.bucket)
         self.assertEqual(self.name, f.name)
