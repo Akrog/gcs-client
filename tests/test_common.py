@@ -131,6 +131,81 @@ class TestGCS(unittest.TestCase):
         self.assertRaises(AssertionError, setattr, gcs, 'retry_params', 1)
         self.assertIs(common.RetryParams.get_default(), gcs.retry_params)
 
+    @mock.patch('requests.request', **{'return_value.status_code': 200})
+    @mock.patch('requests.utils.quote')
+    def test_request_default_ok(self, quote_mock, request_mock):
+        """Test _request method with default values."""
+        creds = mock.Mock()
+        gcs = self.test_class(creds)
+        self.assertEqual(request_mock.return_value, gcs._request())
+        request_mock.assert_called_once_with(
+            'GET', self.test_class.URL, params={},
+            headers={'Authorization': creds.authorization}, data=None)
+        self.assertFalse(quote_mock.called)
+        self.assertFalse(request_mock.return_value.json.called)
+
+    @mock.patch('requests.request', **{'return_value.status_code': 200})
+    @mock.patch('requests.utils.quote')
+    def test_request_default_ok_url_params(self, quote_mock, request_mock):
+        """Test _request method with default values."""
+        creds = mock.Mock()
+        gcs = self.test_class(creds)
+        setattr(gcs, 'size', 123)
+        quote_mock.return_value = 123
+        gcs._required_attributes = list(gcs._required_attributes) + ['size']
+        gcs.URL = 'url_%s'
+        self.assertEqual(request_mock.return_value, gcs._request())
+        request_mock.assert_called_once_with(
+            'GET', 'url_123', params={},
+            headers={'Authorization': creds.authorization}, data=None)
+        self.assertTrue(quote_mock.called)
+        self.assertFalse(request_mock.return_value.json.called)
+
+    @mock.patch('requests.request', **{'return_value.status_code': 404})
+    @mock.patch('requests.utils')
+    def test_request_default_error(self, utils_mock, request_mock):
+        """Test _request method with default values."""
+        creds = mock.Mock()
+        gcs = self.test_class(creds)
+        self.assertRaises(gcs_errors.NotFound, gcs._request)
+        request_mock.assert_called_once_with(
+            'GET', self.test_class.URL, params={},
+            headers={'Authorization': creds.authorization}, data=None)
+        self.assertFalse(utils_mock.quote.called)
+        self.assertFalse(request_mock.return_value.json.called)
+
+    @mock.patch('requests.request', **{'return_value.status_code': 203})
+    @mock.patch('requests.utils.quote')
+    def test_request_non_default_ok(self, quote_mock, request_mock):
+        """Test _request method with default values."""
+        creds = mock.Mock()
+        gcs = self.test_class(creds)
+        res = gcs._request(op=mock.sentinel.op, headers={'head': 'hello'},
+                           body=mock.sentinel.body, parse=True, ok=(203,),
+                           param1=mock.sentinel.param1)
+        self.assertEqual(request_mock.return_value, res)
+        request_mock.assert_called_once_with(
+            mock.sentinel.op, self.test_class.URL,
+            params={'param1': mock.sentinel.param1},
+            headers={'Authorization': creds.authorization, 'head': 'hello'},
+            data=mock.sentinel.body)
+        self.assertFalse(quote_mock.called)
+        self.assertTrue(request_mock.return_value.json.called)
+
+    @mock.patch('requests.request', **{'return_value.status_code': 200})
+    @mock.patch('requests.utils.quote')
+    def test_request_default_json_error(self, quote_mock, request_mock):
+        """Test _request method with default values."""
+        request_mock.return_value.json.side_effect = ValueError()
+        creds = mock.Mock()
+        gcs = self.test_class(creds)
+        self.assertRaises(gcs_errors.Error, gcs._request, parse=True)
+        request_mock.assert_called_once_with(
+            'GET', self.test_class.URL, params={},
+            headers={'Authorization': creds.authorization}, data=None)
+        self.assertFalse(quote_mock.called)
+        self.assertTrue(request_mock.return_value.json.called)
+
 
 class TestFillable(TestGCS):
     """Test Fillable class."""

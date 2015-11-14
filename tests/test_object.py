@@ -24,7 +24,9 @@ Tests for Object class.
 import unittest
 
 import mock
+import requests
 
+from gcs_client import errors
 from gcs_client import gcs_object
 
 
@@ -53,22 +55,19 @@ class TestObject(unittest.TestCase):
         self.assertIsNone(obj.bucket)
         self.assertIsNone(obj.generation)
 
-    def test_get_data(self):
+    @mock.patch('gcs_client.common.GCS._request')
+    def test_get_data(self, request_mock):
         """Test _get_data used when accessing non existent attributes."""
-        obj = gcs_object.Object(mock.sentinel.bucket, mock.sentinel.name,
-                                mock.sentinel.generation, mock.Mock(),
-                                mock.sentinel.retry_params)
-        serv = mock.Mock()
-        get_mock = serv.objects.return_value.get
-        get_mock.return_value.execute.return_value = mock.sentinel.ret_val
-        obj._service = serv
+        bucket = 'bucket'
+        name = 'name'
+        request_mock.return_value.json.return_value = {'size': '1'}
+        obj = gcs_object.Object(bucket, name, mock.sentinel.generation,
+                                mock.Mock(), mock.sentinel.retry_params)
 
         result = obj._get_data()
-        self.assertEqual(mock.sentinel.ret_val, result)
-        get_mock.assert_called_once_with(bucket=mock.sentinel.bucket,
-                                         object=mock.sentinel.name,
-                                         generation=mock.sentinel.generation)
-        get_mock.return_value.execute.assert_called_once_with()
+        self.assertEqual({'size': '1'}, result)
+        request_mock.assert_called_once_with(
+            parse=True, generation=mock.sentinel.generation)
 
     def test_str(self):
         """Test string representation."""
@@ -86,53 +85,48 @@ class TestObject(unittest.TestCase):
         self.assertEqual("gcs_client.gcs_object.Object('%s', '%s', '%s') "
                          "#etag: ?" % (bucket, name, generation), repr(obj))
 
-    @mock.patch('gcs_client.gcs_object.Object._get_data')
-    def test_exists(self, mock_get_data):
+    @mock.patch('gcs_client.common.GCS._request', return_value={'size': 1})
+    def test_exists(self, mock_request):
         """Test repr representation."""
-        mock_get_data.return_value = {'size': 1}
         bucket = 'bucket'
         name = 'name'
         generation = 'generation'
-        obj = gcs_object.Object(bucket, name, generation)
+        obj = gcs_object.Object(bucket, name, generation, mock.Mock())
         self.assertTrue(obj.exists())
-        mock_get_data.assert_called_once_with()
+        mock_request.assert_called_once_with(op='HEAD')
 
-    @mock.patch('gcs_client.gcs_object.Object._get_data')
-    def test_exists_not(self, mock_get_data):
+    @mock.patch('gcs_client.common.GCS._request')
+    def test_exists_not(self, mock_request):
         """Test repr representation."""
-        mock_get_data.return_value = AttributeError
+        mock_request.side_effect = errors.NotFound()
         bucket = 'bucket'
         name = 'name'
         generation = 'generation'
-        obj = gcs_object.Object(bucket, name, generation)
+        obj = gcs_object.Object(bucket, name, generation, mock.Mock())
         self.assertFalse(obj.exists())
-        mock_get_data.assert_called_once_with()
+        mock_request.assert_called_once_with(op='HEAD')
 
-    def test_delete(self):
+    @mock.patch('gcs_client.common.GCS._request')
+    def test_delete(self, request_mock):
         """Test object delete."""
-        obj = gcs_object.Object(mock.sentinel.bucket, mock.sentinel.name,
-                                mock.sentinel.generation,
-                                mock.Mock(),
-                                mock.sentinel.retry_params)
-        obj._service = mock.Mock()
+        bucket = 'bucket'
+        name = 'filename'
+        obj = gcs_object.Object(bucket, name, mock.sentinel.generation,
+                                mock.Mock(), mock.sentinel.retry_params)
 
         obj.delete(mock.sentinel.specific_generation,
                    mock.sentinel.if_generation_match,
                    mock.sentinel.if_generation_not_match,
                    mock.sentinel.if_metageneration_match,
                    mock.sentinel.if_metageneration_not_match)
-        delete = obj._service.objects.return_value.delete
 
-        delete.assert_called_once_with(
-            bucket=mock.sentinel.bucket,
-            object=mock.sentinel.name,
+        request_mock.assert_called_once_with(
+            op='DELETE', ok=(requests.codes.no_content,),
             generation=mock.sentinel.specific_generation,
             ifGenerationMatch=mock.sentinel.if_generation_match,
             ifGenerationNotMatch=mock.sentinel.if_generation_not_match,
             ifMetagenerationMatch=mock.sentinel.if_metageneration_match,
             ifMetagenerationNotMatch=mock.sentinel.if_metageneration_not_match)
-
-        delete.return_value.execute.assert_called_once_with()
 
     @mock.patch('gcs_client.gcs_object.GCSObjFile')
     def test_open(self, mock_file):

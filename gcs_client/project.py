@@ -25,6 +25,7 @@ class Project(common.Listable):
     """GCS Project Object representation."""
 
     _required_attributes = common.GCS._required_attributes + ['project_id']
+    URL = common.Fillable.URL + '?project=%s'
 
     def __init__(self, project_id, credentials=None, retry_params=None):
         """Initialize a Project object.

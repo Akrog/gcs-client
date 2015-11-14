@@ -23,6 +23,7 @@ class Bucket(common.Fillable, common.Listable):
     """GCS Bucket Object representation."""
 
     _required_attributes = common.GCS._required_attributes + ['name']
+    URL = common.Fillable.URL + '/%s/o'
 
     def __init__(self, name=None, credentials=None, retry_params=None):
         """Initialize a Bucket object.

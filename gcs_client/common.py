@@ -24,6 +24,7 @@ import time
 
 from apiclient import discovery
 from apiclient import errors
+import requests
 
 from gcs_client import errors as gcs_errors
 
@@ -45,6 +46,8 @@ class GCS(object):
 
     _required_attributes = ['credentials']
 
+    URL = 'https://www.googleapis.com/storage/v1/b'
+
     def __init__(self, credentials, retry_params=None):
         """Base GCS initialization.
 
@@ -58,6 +61,45 @@ class GCS(object):
         """
         self.credentials = credentials
         self._retry_params = retry_params or RetryParams.get_default()
+
+    def _request(self, op='GET', headers=None, body=None, parse=False,
+                 ok=(requests.codes.ok,), **params):
+        """Request actions on a GCS resource.
+
+        :param op: Operation to perform (GET, PUT, POST, HEAD, DELETE).
+        :type op: six.string_types
+        :param headers: Headers to send in the request.  Authentication will be
+                        added.
+        :type headers: dict
+        :param body: Body to send in the request.
+        :type body: Dictionary, bytes or file-like object.
+        :param parse: If we want to check that response body is JSON.
+        :type parse: bool
+        :param ok: Response status codes to consider as OK.
+        :type ok: Iterable of integer numbers
+        :param params: All params to send as URL params in the request.
+        :returns: requests.Request
+        :"""
+        headers = {} if not headers else headers.copy()
+        headers['Authorization'] = self._credentials.authorization
+
+        url = self.URL % tuple(requests.utils.quote(getattr(self, x))
+                               for x in self._required_attributes
+                               if x not in GCS._required_attributes)
+        r = requests.request(op, url, params=params, headers=headers,
+                             data=body)
+
+        if r.status_code not in ok:
+            raise gcs_errors.create_http_exception(r.status_code, r.content)
+
+        if parse:
+            try:
+                r.json()
+            except Exception:
+                raise gcs_errors.Error('GCS response is not JSON: %s' %
+                                       r.content)
+
+        return r
 
     @property
     def retry_params(self):

@@ -36,7 +36,8 @@ DEFAULT_BLOCK_SIZE = 4 * BLOCK_MULTIPLE
 class Object(common.Fillable):
     """GCS Stored Object Object representation."""
 
-    _required_attributes = common.GCS._required_attributes + ['name', 'bucket']
+    _required_attributes = common.GCS._required_attributes + ['bucket', 'name']
+    URL = common.Fillable.URL + '/%s/o/%s'
 
     def __init__(self, bucket=None, name=None, generation=None,
                  credentials=None, retry_params=None):
@@ -51,35 +52,31 @@ class Object(common.Fillable):
         self.generation = generation
 
     @common.retry
-    @common.convert_exception
     def _get_data(self):
-        req = self._service.objects().get(bucket=self.bucket, object=self.name,
-                                          generation=self.generation)
-        return req.execute()
+        r = self._request(parse=True, generation=self.generation)
+        return r.json()
 
+    @common.is_complete
+    @common.retry
     def exists(self):
         try:
-            self.size
-        except AttributeError:
+            self._request(op='HEAD')
+        except errors.NotFound:
             return False
         return True
 
     @common.is_complete
     @common.retry
-    @common.convert_exception
     def delete(self, generation=None, if_generation_match=None,
                if_generation_not_match=None, if_metageneration_match=None,
                if_metageneration_not_match=None):
 
-        req = self._service.objects().delete(
-            bucket=self.bucket,
-            object=self.name,
-            generation=generation or self.generation,
-            ifGenerationMatch=if_generation_match,
-            ifGenerationNotMatch=if_generation_not_match,
-            ifMetagenerationMatch=if_metageneration_match,
-            ifMetagenerationNotMatch=if_metageneration_not_match)
-        req.execute()
+        self._request(op='DELETE', ok=(requests.codes.no_content,),
+                      generation=generation or self.generation,
+                      ifGenerationMatch=if_generation_match,
+                      ifGenerationNotMatch=if_generation_not_match,
+                      ifMetagenerationMatch=if_metageneration_match,
+                      ifMetagenerationNotMatch=if_metageneration_not_match)
 
     @common.is_complete
     def open(self, mode='r', generation=None):
