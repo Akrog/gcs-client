@@ -125,10 +125,10 @@ class TestBucket(unittest.TestCase):
         file_name = mock.sentinel.file_name
         mode = mock.sentinel.mode
         generation = mock.sentinel.generation
-
+        chunksize = mock.sentinel.chunksize
         bukt = bucket.Bucket(name, creds, retry)
-        result = bukt.open(file_name, mode, generation)
+        result = bukt.open(file_name, mode, generation, chunksize)
         self.assertEqual(mock_obj.return_value.open.return_value, result)
         mock_obj.assert_called_once_with(name, file_name, generation, creds,
-                                         retry)
+                                         retry, chunksize)
         mock_obj.return_value.open.assert_called_once_with(mode, generation)

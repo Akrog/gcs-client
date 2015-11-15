@@ -40,7 +40,7 @@ class Object(common.Fillable):
     URL = common.Fillable.URL + '/%s/o/%s'
 
     def __init__(self, bucket=None, name=None, generation=None,
-                 credentials=None, retry_params=None):
+                 credentials=None, retry_params=None, chunksize=None):
         """Initialize an Object object.
 
         :param name: Name of the bucket to use.
@@ -50,6 +50,7 @@ class Object(common.Fillable):
         self.name = name
         self.bucket = bucket
         self.generation = generation
+        self._chunksize = chunksize
 
     @common.retry
     def _get_data(self):
@@ -72,7 +73,7 @@ class Object(common.Fillable):
     @common.is_complete
     def open(self, mode='r', generation=None):
         return GCSObjFile(self.bucket, self.name, self._credentials, mode,
-                          None, self.retry_params)
+                          self._chunksize, self.retry_params)
 
     def __str__(self):
         return '%s/%s' % (self.bucket, self.name)

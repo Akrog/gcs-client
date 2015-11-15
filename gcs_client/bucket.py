@@ -59,9 +59,9 @@ class Bucket(common.Fillable, common.Listable):
                       ifMetagenerationMatch=if_metageneration_match,
                       ifMetagenerationNotMatch=if_metageneration_not_match)
 
-    def open(self, name, mode='r', generation=None):
+    def open(self, name, mode='r', generation=None, chunksize=None):
         obj = gcs_object.Object(self.name, name, generation, self.credentials,
-                                self.retry_params)
+                                self.retry_params, chunksize)
         return obj.open(mode, generation)
 
     def __str__(self):
