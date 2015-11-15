@@ -30,7 +30,7 @@ from gcs_client import bucket
 
 class TestBucket(unittest.TestCase):
 
-    @mock.patch('gcs_client.common.Fillable.__init__')
+    @mock.patch('gcs_client.common.GCS.__init__')
     def test_init(self, mock_init):
         """Test init providing all arguments."""
         bukt = bucket.Bucket(mock.sentinel.name, mock.sentinel.credentials,
@@ -39,7 +39,7 @@ class TestBucket(unittest.TestCase):
                                           mock.sentinel.retry_params)
         self.assertEqual(mock.sentinel.name, bukt.name)
 
-    @mock.patch('gcs_client.common.Fillable.__init__')
+    @mock.patch('gcs_client.common.GCS.__init__')
     def test_init_defaults(self, mock_init):
         """Test init providing only required arguments."""
         bukt = bucket.Bucket(mock.sentinel.name)

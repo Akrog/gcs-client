@@ -283,17 +283,26 @@ class TestFillable(TestGCS):
         get data (calling _get_data method) and create attributes in the object
         with that data, then try to return requested attribute.
 
-        This test confirms that the filling of attributes will skip existing
-        attributes.
+        This test confirms that the filling of attributes will overshadow
+        existing attributes.
         """
-        mock_get_data.return_value = {'credentials': mock.sentinel.new_attr,
+        mock_get_data.return_value = {'size': mock.sentinel.gcs_size,
                                       'name': mock.sentinel.name}
-        fill = self.test_class(mock.sentinel.credentials)
+        fill = self.test_class(mock.sentinel.original_credentials)
+        fill.size = mock.sentinel.my_size
+        # We check that retrieving an initialized attribute doesn't trigger
+        # gcs data retrieval
+        self.assertEquals(mock.sentinel.my_size, fill.size)
+        self.assertFalse(mock_get_data.called)
+        # Getting an unkown field will trigger the data retrieval
         self.assertEquals(mock.sentinel.name, fill.name)
-        self.assertEquals(mock.sentinel.credentials, fill.credentials)
+        mock_get_data.assert_called_once_with()
         self.assertTrue(fill._exists)
         self.assertTrue(fill._data_retrieved)
-        mock_get_data.assert_called_once_with()
+        # And now retrieved size will overshadow the one we initialized
+        self.assertEquals(mock.sentinel.gcs_size, fill.size)
+        # But we'll still have access to the original one in __dict__
+        self.assertEquals(mock.sentinel.my_size, fill.__dict__['size'])
 
         # Calling non existing attribute will not trigger another _get_data
         # call

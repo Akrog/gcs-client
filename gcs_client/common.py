@@ -310,6 +310,7 @@ class GCS(object):
 
 class Fillable(GCS):
     def __init__(self, credentials, retry_params=None):
+        super(Fillable, self).__setattr__('_gcs_attrs', {})
         # We need to set a default value for _credentials, otherwise we would
         # end up calling __get_attr__ on GCS base class
         self._credentials = not credentials
@@ -322,6 +323,12 @@ class Fillable(GCS):
         obj = cls(credentials=credentials, retry_params=retry_params)
         obj._fill_with_data(data)
         return obj
+
+    def __getattribute__(self, name):
+        gcs_attrs = super(Fillable, self).__getattribute__('_gcs_attrs')
+        if name in gcs_attrs:
+            return gcs_attrs[name]
+        return super(Fillable, self).__getattribute__(name)
 
     def __getattr__(self, name):
         if self._data_retrieved or self._exists is False:
@@ -337,17 +344,21 @@ class Fillable(GCS):
         self._fill_with_data(data)
         return getattr(self, name)
 
+    def __setattr__(self, name, value, force_gcs=False):
+        if force_gcs or name in self._gcs_attrs:
+            self._gcs_attrs[name] = value
+        else:
+            super(Fillable, self).__setattr__(name, value)
+
     def _fill_with_data(self, data):
         self._data_retrieved = True
         for k, v in data.items():
-            if hasattr(self, k) and getattr(self, k):
-                continue
             if isinstance(v, dict) and len(v) == 1:
                 if six.PY3:
                     v = tuple(v.values())[0]
                 else:
                     v = v.values()[0]
-            setattr(self, k, v)
+            self.__setattr__(k, v, True)
 
     def _get_data(self):
         raise NotImplementedError

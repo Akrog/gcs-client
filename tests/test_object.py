@@ -32,20 +32,20 @@ from gcs_client import gcs_object
 class TestObject(unittest.TestCase):
     """Tests for Object class."""
 
-    @mock.patch('gcs_client.common.Fillable.__init__')
+    @mock.patch('gcs_client.common.GCS.__init__')
     def test_init(self, mock_init):
         """Test init providing all arguments."""
+        creds = mock.Mock()
         obj = gcs_object.Object(mock.sentinel.bucket, mock.sentinel.name,
                                 mock.sentinel.generation,
-                                mock.sentinel.credentials,
+                                creds,
                                 mock.sentinel.retry_params)
-        mock_init.assert_called_once_with(mock.sentinel.credentials,
-                                          mock.sentinel.retry_params)
+        mock_init.assert_called_once_with(creds, mock.sentinel.retry_params)
         self.assertEqual(mock.sentinel.name, obj.name)
         self.assertEqual(mock.sentinel.bucket, obj.bucket)
         self.assertEqual(mock.sentinel.generation, obj.generation)
 
-    @mock.patch('gcs_client.common.Fillable.__init__')
+    @mock.patch('gcs_client.common.GCS.__init__')
     def test_init_defaults(self, mock_init):
         """Test init providing only required arguments."""
         obj = gcs_object.Object()
