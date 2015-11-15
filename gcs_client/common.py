@@ -41,141 +41,6 @@ def is_complete(f):
     return wrapped
 
 
-class GCS(object):
-    api_version = 'v1'
-
-    _required_attributes = ['credentials']
-
-    URL = 'https://www.googleapis.com/storage/v1/b'
-
-    def __init__(self, credentials, retry_params=None):
-        """Base GCS initialization.
-
-        :param credentials: credentials to use for accessing GCS
-        :type credentials: Credentials
-        :param retry_params: retry configuration used for communications with
-                             GCS.  If not specified RetryParams.getdefault()
-                             will be used.
-        :type retry_params: RetryParams
-        :returns: None
-        """
-        self.credentials = credentials
-        self._retry_params = retry_params or RetryParams.get_default()
-
-    def _request(self, op='GET', headers=None, body=None, parse=False,
-                 ok=(requests.codes.ok,), **params):
-        """Request actions on a GCS resource.
-
-        :param op: Operation to perform (GET, PUT, POST, HEAD, DELETE).
-        :type op: six.string_types
-        :param headers: Headers to send in the request.  Authentication will be
-                        added.
-        :type headers: dict
-        :param body: Body to send in the request.
-        :type body: Dictionary, bytes or file-like object.
-        :param parse: If we want to check that response body is JSON.
-        :type parse: bool
-        :param ok: Response status codes to consider as OK.
-        :type ok: Iterable of integer numbers
-        :param params: All params to send as URL params in the request.
-        :returns: requests.Request
-        :"""
-        headers = {} if not headers else headers.copy()
-        headers['Authorization'] = self._credentials.authorization
-
-        url = self.URL % tuple(requests.utils.quote(getattr(self, x))
-                               for x in self._required_attributes
-                               if x not in GCS._required_attributes)
-        r = requests.request(op, url, params=params, headers=headers,
-                             data=body)
-
-        if r.status_code not in ok:
-            raise gcs_errors.create_http_exception(r.status_code, r.content)
-
-        if parse:
-            try:
-                r.json()
-            except Exception:
-                raise gcs_errors.Error('GCS response is not JSON: %s' %
-                                       r.content)
-
-        return r
-
-    @property
-    def retry_params(self):
-        """Get retry configuration used by this instance for accessing GCS."""
-        return self._retry_params
-
-    @retry_params.setter
-    def retry_params(self, retry_params):
-        """Set retry configuration used by this instance for accessing GCS.
-
-        :param retry_params: retry configuration used for communications with
-                             GCS.  If None is passed retries will be disabled.
-        :type retry_params: RetryParams or NoneType
-        """
-        assert isinstance(retry_params, (type(None), RetryParams))
-        self._retry_params = retry_params
-
-    @property
-    def credentials(self):
-        return self._credentials
-
-    @credentials.setter
-    def credentials(self, value):
-        if value == getattr(self, '_credentials', not value):
-            return
-
-        self._credentials = value
-        self._service = discovery.build('storage', self.api_version,
-                                        credentials=self._credentials)
-
-
-class Fillable(GCS):
-    def __init__(self, credentials, retry_params=None):
-        # We need to set a default value for _credentials, otherwise we would
-        # end up calling __get_attr__ on GCS base class
-        self._credentials = not credentials
-        super(Fillable, self).__init__(credentials, retry_params)
-        self._data_retrieved = False
-        self._exists = None
-
-    @classmethod
-    def obj_from_data(cls, data, credentials=None, retry_params=None):
-        obj = cls(credentials=credentials, retry_params=retry_params)
-        obj._fill_with_data(data)
-        return obj
-
-    def __getattr__(self, name):
-        if self._data_retrieved or self._exists is False:
-            raise AttributeError
-
-        try:
-            data = self._get_data()
-            self._exists = True
-        except gcs_errors.NotFound:
-            self._exists = False
-            raise AttributeError
-
-        self._fill_with_data(data)
-        return getattr(self, name)
-
-    def _fill_with_data(self, data):
-        self._data_retrieved = True
-        for k, v in data.items():
-            if hasattr(self, k) and getattr(self, k):
-                continue
-            if isinstance(v, dict) and len(v) == 1:
-                if six.PY3:
-                    v = tuple(v.values())[0]
-                else:
-                    v = v.values()[0]
-            setattr(self, k, v)
-
-    def _get_data(self):
-        raise NotImplementedError
-
-
 class RetryParams(object):
     """Truncated Exponential Backoff configuration class.
 
@@ -342,6 +207,150 @@ def retry(param='_retry_params', error_codes=DEFAULT_RETRY_CODES):
         return _retry(f)
 
     return _retry
+
+
+class GCS(object):
+    api_version = 'v1'
+
+    _required_attributes = ['credentials']
+
+    URL = 'https://www.googleapis.com/storage/v1/b'
+
+    def __init__(self, credentials, retry_params=None):
+        """Base GCS initialization.
+
+        :param credentials: credentials to use for accessing GCS
+        :type credentials: Credentials
+        :param retry_params: retry configuration used for communications with
+                             GCS.  If not specified RetryParams.getdefault()
+                             will be used.
+        :type retry_params: RetryParams
+        :returns: None
+        """
+        self.credentials = credentials
+        self._retry_params = retry_params or RetryParams.get_default()
+
+    def _request(self, op='GET', headers=None, body=None, parse=False,
+                 ok=(requests.codes.ok,), **params):
+        """Request actions on a GCS resource.
+
+        :param op: Operation to perform (GET, PUT, POST, HEAD, DELETE).
+        :type op: six.string_types
+        :param headers: Headers to send in the request.  Authentication will be
+                        added.
+        :type headers: dict
+        :param body: Body to send in the request.
+        :type body: Dictionary, bytes or file-like object.
+        :param parse: If we want to check that response body is JSON.
+        :type parse: bool
+        :param ok: Response status codes to consider as OK.
+        :type ok: Iterable of integer numbers
+        :param params: All params to send as URL params in the request.
+        :returns: requests.Request
+        :"""
+        headers = {} if not headers else headers.copy()
+        headers['Authorization'] = self._credentials.authorization
+
+        url = self.URL % tuple(requests.utils.quote(getattr(self, x))
+                               for x in self._required_attributes
+                               if x not in GCS._required_attributes)
+        r = requests.request(op, url, params=params, headers=headers,
+                             data=body)
+
+        if r.status_code not in ok:
+            raise gcs_errors.create_http_exception(r.status_code, r.content)
+
+        if parse:
+            try:
+                r.json()
+            except Exception:
+                raise gcs_errors.Error('GCS response is not JSON: %s' %
+                                       r.content)
+
+        return r
+
+    @property
+    def retry_params(self):
+        """Get retry configuration used by this instance for accessing GCS."""
+        return self._retry_params
+
+    @retry_params.setter
+    def retry_params(self, retry_params):
+        """Set retry configuration used by this instance for accessing GCS.
+
+        :param retry_params: retry configuration used for communications with
+                             GCS.  If None is passed retries will be disabled.
+        :type retry_params: RetryParams or NoneType
+        """
+        assert isinstance(retry_params, (type(None), RetryParams))
+        self._retry_params = retry_params
+
+    @property
+    def credentials(self):
+        return self._credentials
+
+    @credentials.setter
+    def credentials(self, value):
+        if value == getattr(self, '_credentials', not value):
+            return
+
+        self._credentials = value
+        self._service = discovery.build('storage', self.api_version,
+                                        credentials=self._credentials)
+
+    @is_complete
+    @retry
+    def exists(self):
+        try:
+            self._request(op='HEAD')
+        except (gcs_errors.NotFound, gcs_errors.BadRequest):
+            return False
+        return True
+
+
+class Fillable(GCS):
+    def __init__(self, credentials, retry_params=None):
+        # We need to set a default value for _credentials, otherwise we would
+        # end up calling __get_attr__ on GCS base class
+        self._credentials = not credentials
+        super(Fillable, self).__init__(credentials, retry_params)
+        self._data_retrieved = False
+        self._exists = None
+
+    @classmethod
+    def obj_from_data(cls, data, credentials=None, retry_params=None):
+        obj = cls(credentials=credentials, retry_params=retry_params)
+        obj._fill_with_data(data)
+        return obj
+
+    def __getattr__(self, name):
+        if self._data_retrieved or self._exists is False:
+            raise AttributeError
+
+        try:
+            data = self._get_data()
+            self._exists = True
+        except gcs_errors.NotFound:
+            self._exists = False
+            raise AttributeError
+
+        self._fill_with_data(data)
+        return getattr(self, name)
+
+    def _fill_with_data(self, data):
+        self._data_retrieved = True
+        for k, v in data.items():
+            if hasattr(self, k) and getattr(self, k):
+                continue
+            if isinstance(v, dict) and len(v) == 1:
+                if six.PY3:
+                    v = tuple(v.values())[0]
+                else:
+                    v = v.values()[0]
+            setattr(self, k, v)
+
+    def _get_data(self):
+        raise NotImplementedError
 
 
 def convert_exception(f):

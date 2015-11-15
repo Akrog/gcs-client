@@ -206,6 +206,30 @@ class TestGCS(unittest.TestCase):
         self.assertFalse(quote_mock.called)
         self.assertTrue(request_mock.return_value.json.called)
 
+    @mock.patch('gcs_client.common.GCS._request')
+    def test_exists(self, mock_request):
+        """Test repr representation."""
+        mock_request.return_value.status_code = 200
+        obj = self.test_class(mock.Mock())
+        self.assertTrue(obj.exists())
+        mock_request.assert_called_once_with(op='HEAD')
+
+    @mock.patch('gcs_client.common.GCS._request')
+    def test_exists_not_found(self, mock_request):
+        """Test repr representation."""
+        mock_request.side_effect = gcs_errors.NotFound()
+        obj = self.test_class(mock.Mock())
+        self.assertFalse(obj.exists())
+        mock_request.assert_called_once_with(op='HEAD')
+
+    @mock.patch('gcs_client.common.GCS._request')
+    def test_exists_bad_request(self, mock_request):
+        """Test repr representation."""
+        mock_request.side_effect = gcs_errors.BadRequest()
+        obj = self.test_class(mock.Mock())
+        self.assertFalse(obj.exists())
+        mock_request.assert_called_once_with(op='HEAD')
+
 
 class TestFillable(TestGCS):
     """Test Fillable class."""

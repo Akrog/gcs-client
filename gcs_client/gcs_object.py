@@ -58,15 +58,6 @@ class Object(common.Fillable):
 
     @common.is_complete
     @common.retry
-    def exists(self):
-        try:
-            self._request(op='HEAD')
-        except errors.NotFound:
-            return False
-        return True
-
-    @common.is_complete
-    @common.retry
     def delete(self, generation=None, if_generation_match=None,
                if_generation_not_match=None, if_metageneration_match=None,
                if_metageneration_not_match=None):

@@ -26,7 +26,6 @@ import unittest
 import mock
 import requests
 
-from gcs_client import errors
 from gcs_client import gcs_object
 
 
@@ -84,27 +83,6 @@ class TestObject(unittest.TestCase):
         obj = gcs_object.Object(bucket, name, generation)
         self.assertEqual("gcs_client.gcs_object.Object('%s', '%s', '%s') "
                          "#etag: ?" % (bucket, name, generation), repr(obj))
-
-    @mock.patch('gcs_client.common.GCS._request', return_value={'size': 1})
-    def test_exists(self, mock_request):
-        """Test repr representation."""
-        bucket = 'bucket'
-        name = 'name'
-        generation = 'generation'
-        obj = gcs_object.Object(bucket, name, generation, mock.Mock())
-        self.assertTrue(obj.exists())
-        mock_request.assert_called_once_with(op='HEAD')
-
-    @mock.patch('gcs_client.common.GCS._request')
-    def test_exists_not(self, mock_request):
-        """Test repr representation."""
-        mock_request.side_effect = errors.NotFound()
-        bucket = 'bucket'
-        name = 'name'
-        generation = 'generation'
-        obj = gcs_object.Object(bucket, name, generation, mock.Mock())
-        self.assertFalse(obj.exists())
-        mock_request.assert_called_once_with(op='HEAD')
 
     @mock.patch('gcs_client.common.GCS._request')
     def test_delete(self, request_mock):
