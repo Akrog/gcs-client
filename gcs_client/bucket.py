@@ -62,7 +62,7 @@ class Bucket(common.Fillable, common.Listable):
     def open(self, name, mode='r', generation=None, chunksize=None):
         obj = gcs_object.Object(self.name, name, generation, self.credentials,
                                 self.retry_params, chunksize)
-        return obj.open(mode, generation)
+        return obj.open(mode)
 
     def __str__(self):
         return self.name

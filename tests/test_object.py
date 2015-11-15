@@ -112,9 +112,12 @@ class TestObject(unittest.TestCase):
         creds = mock.Mock()
         obj = gcs_object.Object(mock.sentinel.bucket, mock.sentinel.name,
                                 mock.sentinel.generation, creds,
-                                mock.sentinel.retry_params)
+                                mock.sentinel.retry_params,
+                                mock.sentinel.chunksize)
         self.assertEqual(mock_file.return_value, obj.open(mock.sentinel.mode))
         mock_file.assert_called_once_with(mock.sentinel.bucket,
                                           mock.sentinel.name, creds,
-                                          mock.sentinel.mode, None,
-                                          mock.sentinel.retry_params)
+                                          mock.sentinel.mode,
+                                          mock.sentinel.chunksize,
+                                          mock.sentinel.retry_params,
+                                          mock.sentinel.generation)

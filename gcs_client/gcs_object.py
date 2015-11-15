@@ -71,9 +71,9 @@ class Object(common.Fillable):
                       ifMetagenerationNotMatch=if_metageneration_not_match)
 
     @common.is_complete
-    def open(self, mode='r', generation=None):
+    def open(self, mode='r'):
         return GCSObjFile(self.bucket, self.name, self._credentials, mode,
-                          self._chunksize, self.retry_params)
+                          self._chunksize, self.retry_params, self.generation)
 
     def __str__(self):
         return '%s/%s' % (self.bucket, self.name)
@@ -89,7 +89,7 @@ class GCSObjFile(object):
     URL_UPLOAD = 'https://www.googleapis.com/upload/storage/v1/b/%s/o'
 
     def __init__(self, bucket, name, credentials, mode='r', chunksize=None,
-                 retry_params=None):
+                 retry_params=None, generation=None):
         if mode not in ('r', 'w'):
             raise IOError('Only r or w modes supported')
         self.mode = mode
@@ -105,6 +105,7 @@ class GCSObjFile(object):
         self._credentials = credentials
         self._buffer = _Buffer()
         self._retry_params = retry_params
+        self._generation = generation
         try:
             self._open()
         except errors.NotFound:
@@ -135,7 +136,7 @@ class GCSObjFile(object):
         safe_name = requests.utils.quote(self.name, safe='')
         if self._is_readable():
             self._location = self.URL % (safe_bucket, safe_name)
-            params = {'fields': 'size'}
+            params = {'fields': 'size', 'generation': self._generation}
             headers = {'Authorization': self._credentials.authorization}
             r = requests.get(self._location, params=params, headers=headers)
             if r.status_code == requests.codes.ok:

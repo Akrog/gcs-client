@@ -154,7 +154,8 @@ class TestObjFile(unittest.TestCase):
         self.assertRaises(IOError, gcs_object.GCSObjFile, bucket, name, creds,
                           'r')
         get_mock.assert_called_once_with(expected_url, headers=mock.ANY,
-                                         params={'fields': 'size'})
+                                         params={'fields': 'size',
+                                                 'generation': None})
 
     @mock.patch('requests.get', **{'return_value.status_code': 200})
     def test_init_read(self, get_mock):

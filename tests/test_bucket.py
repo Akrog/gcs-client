@@ -131,4 +131,4 @@ class TestBucket(unittest.TestCase):
         self.assertEqual(mock_obj.return_value.open.return_value, result)
         mock_obj.assert_called_once_with(name, file_name, generation, creds,
                                          retry, chunksize)
-        mock_obj.return_value.open.assert_called_once_with(mode, generation)
+        mock_obj.return_value.open.assert_called_once_with(mode)
