@@ -15,6 +15,8 @@
 
 from __future__ import absolute_import
 
+import requests
+
 from gcs_client import common
 from gcs_client import gcs_object
 
@@ -23,7 +25,7 @@ class Bucket(common.Fillable, common.Listable):
     """GCS Bucket Object representation."""
 
     _required_attributes = common.GCS._required_attributes + ['name']
-    URL = common.Fillable.URL + '/%s/o'
+    URL = common.Fillable.URL + '/%s'
 
     def __init__(self, name=None, credentials=None, retry_params=None):
         """Initialize a Bucket object.
@@ -35,10 +37,9 @@ class Bucket(common.Fillable, common.Listable):
         self.name = name
 
     @common.retry
-    @common.convert_exception
     def _get_data(self):
-        req = self._service.buckets().get(bucket=self.name)
-        return req.execute()
+        r = self._request(parse=True)
+        return r.json()
 
     @property
     def _child_info(self):
@@ -52,11 +53,11 @@ class Bucket(common.Fillable, common.Listable):
                           pageToken=pageToken)
 
     @common.retry
-    @common.convert_exception
-    def delete(self, if_metageneration_math=None,
+    def delete(self, if_metageneration_match=None,
                if_metageneration_not_match=None):
-        req = self._service.buckets().delete(bucket=self.name)
-        req.execute()
+        self._request(op='DELETE', ok=(requests.codes.no_content,),
+                      ifMetagenerationMatch=if_metageneration_match,
+                      ifMetagenerationNotMatch=if_metageneration_not_match)
 
     def open(self, name, mode='r', generation=None):
         obj = gcs_object.Object(self.name, name, generation, self.credentials,

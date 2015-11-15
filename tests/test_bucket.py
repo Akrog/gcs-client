@@ -24,6 +24,7 @@ Tests for Bucket class.
 import unittest
 
 import mock
+import requests
 
 from gcs_client import bucket
 
@@ -46,18 +47,15 @@ class TestBucket(unittest.TestCase):
         mock_init.assert_called_once_with(None, None)
         self.assertEqual(mock.sentinel.name, bukt.name)
 
-    def test_get_data(self):
+    @mock.patch('gcs_client.common.GCS._request')
+    def test_get_data(self, request_mock):
         """Test _get_data used when accessing non existent attributes."""
         bukt = bucket.Bucket(mock.sentinel.name)
-        serv = mock.Mock()
-        get_mock = serv.buckets.return_value.get
-        get_mock.return_value.execute.return_value = mock.sentinel.ret_val
-        bukt._service = serv
 
         result = bukt._get_data()
-        self.assertEqual(mock.sentinel.ret_val, result)
-        get_mock.assert_called_once_with(bucket=mock.sentinel.name)
-        get_mock.return_value.execute.assert_called_once_with()
+        request_mock.assert_called_once_with(parse=True)
+        self.assertEqual(request_mock.return_value.json.return_value,
+                         result)
 
     def test_str(self):
         """Test string representation."""
@@ -107,15 +105,16 @@ class TestBucket(unittest.TestCase):
         objs_mock.list_next.assert_called_once_with(
             objs_mock.list.return_value, items)
 
-    def test_delete(self):
+    @mock.patch('gcs_client.common.GCS._request')
+    def test_delete(self, request_mock):
         """Test bucket delete."""
         bukt = bucket.Bucket(mock.sentinel.name, mock.Mock())
-        bukt._service = mock.Mock()
 
         bukt.delete()
-        delete = bukt._service.buckets.return_value.delete
-        delete.assert_called_once_with(bucket=mock.sentinel.name)
-        delete.return_value.execute.assert_called_once_with()
+        request_mock.assert_called_once_with(op='DELETE',
+                                             ok=(requests.codes.no_content,),
+                                             ifMetagenerationMatch=None,
+                                             ifMetagenerationNotMatch=None)
 
     @mock.patch('gcs_client.gcs_object.Object')
     def test_open(self, mock_obj):
