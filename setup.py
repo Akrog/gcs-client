@@ -33,7 +33,7 @@ test_requirements = [
 
 setup(
     name='gcs-client',
-    version='0.1.2',
+    version='0.1.3',
     description="Google Cloud Storage Python client",
     long_description=readme + '\n\n' + history,
     author="Gorka Eguileor",
