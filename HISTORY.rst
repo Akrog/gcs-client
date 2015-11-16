@@ -4,10 +4,15 @@
 History
 =======
 
+0.1.4 (2015-11-16)
+------------------
+
+* No changes, version bump to reload in pypi
+
 0.1.3 (2015-11-16)
 ------------------
 
-* Reading an object will return data in a string, not a bytearray.
+* Reading an object will return data as bytes, not a bytearray.
 * Read specific versions of an object.
 * Can specify chunksize on Bucket's open and Object init.
 * Add exists to buckets and project.
