@@ -248,7 +248,7 @@ class GCSObjFile(object):
 
         data = self._buffer.read(size)
         self._offset += len(data)
-        return data
+        return bytes(data)
 
     @common.retry
     def _get_data(self, size, begin=0):
