@@ -39,7 +39,7 @@ Creating a bucket
     credentials = gcs_client.Credentials(credentials_file)
     project = gcs_client.Project(project_name, credentials)
 
-    bucket = project.create_bucket('my_new_bucket')
+    bucket = project.create_bucket('my_new_bucket', location='EU')
     print 'Bucket %s is located in %s with storage class %s' % (bucket, bucket.location, bucket.storageClass)
 
 
@@ -64,8 +64,8 @@ Deleting a bucket
         buckets[0].delete()
 
 
-Listing objects
----------------
+Listing all objects
+-------------------
 
 .. code-block:: python
 
@@ -81,6 +81,25 @@ Listing objects
     objects = buckets[0].list()
 
     print 'Contents of bucket %s:' % bucket
+    if objects:
+        print '\t','\n\t'.join(map(lambda o: o.name + ' has %s bytes' % o.size, objects))
+    else:
+        print '\tThere are no objects'
+
+
+Listing objects with a prefix
+-----------------------------
+
+.. code-block:: python
+
+    import gcs_client
+
+    credentials = gcs_client.Credentials('private_key.json')
+    bucket = gcs_client.Bucket('bucket_name', credentials)
+    directory = 'var/log'
+    objects = bucket.list(directory)
+
+    print 'Contents of %s/%s:' % (bucket.name, directory)
     if objects:
         print '\t','\n\t'.join(map(lambda o: o.name + ' has %s bytes' % o.size, objects))
     else:
@@ -129,6 +148,21 @@ Reading objects
         with objects[0].open() as obj:
             print 'Contents of file %s are:\n' % obj.name, obj.read()
 
+
+Reading objects in big chunks
+-----------------------------
+
+.. code-block:: python
+
+    import gcs_client
+
+    credentials = gcs_client.Credentials('private_key.json')
+    bucket = gcs_client.Bucket('bucket_name', credentials)
+
+    chunksize = 4 * 1024 * 1024
+
+    with bucket.open('my_file', 'r', chunksize=chunksize) as obj:
+        print 'Contents of file %s are:\n' % obj.name, obj.read()
 
 Writing objects
 ---------------
