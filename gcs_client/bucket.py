@@ -43,11 +43,12 @@ class Bucket(common.Fillable, common.Listable):
 
     @property
     def _child_info(self):
-        return (self._service.objects, gcs_object.Object)
+        url = (self.URL % self.name) + '/o'
+        return (url, gcs_object.Object)
 
     def list(self, prefix=None, maxResults=None, versions=None, delimiter=None,
              projection=None, pageToken=None):
-        return self._list(bucket=self.name, prefix=prefix,
+        return self._list(prefix=prefix,
                           maxResults=maxResults, versions=versions,
                           delimiter=delimiter, projection=projection,
                           pageToken=pageToken)

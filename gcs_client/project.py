@@ -45,7 +45,7 @@ class Project(common.Listable):
 
     @property
     def _child_info(self):
-        return (self._service.buckets, bucket.Bucket)
+        return (common.Fillable.URL, bucket.Bucket)
 
     def list(self, fields=None, maxResults=None, projection=None, prefix=None,
              pageToken=None):

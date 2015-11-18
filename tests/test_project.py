@@ -25,6 +25,7 @@ import unittest
 
 import mock
 
+from gcs_client import common
 from gcs_client import project
 
 
@@ -65,32 +66,51 @@ class TestProject(unittest.TestCase):
         prj = project.Project(name)
         self.assertEqual(name, str(prj))
 
+    @mock.patch('gcs_client.project.Project._request')
     @mock.patch('gcs_client.bucket.Bucket.obj_from_data')
-    def test_list(self, obj_mock):
+    def test_list(self, obj_mock, mock_request):
         """Test default bucket listing."""
-        expected = [mock.sentinel.result1, mock.sentinel.result2]
-        obj_mock.side_effect = expected
-        serv = mock.Mock()
-        items = {'items': [mock.sentinel.bucket1, mock.sentinel.bucket2]}
-        buckets_mock = serv.buckets.return_value
-        buckets_mock.list.return_value.execute.return_value = items
-        buckets_mock.list_next.return_value = None
+        expected = [{'items': [mock.sentinel.result1, mock.sentinel.result2],
+                     'nextPageToken': mock.sentinel.next_token},
+                    {'items': [mock.sentinel.result3]}]
+        mock_request.return_value.json.side_effect = expected
+
+        expected2 = [mock.sentinel.result4, mock.sentinel.result5]
+        obj_mock.side_effect = expected2
 
         name = 'project_name'
-        prj = project.Project(name, mock.Mock())
-        prj._service = serv
+        creds = mock.Mock()
+        retry_params = common.RetryParams.get_default()
+        prj = project.Project(name, creds)
 
-        fields = mock.sentinel.fields_to_return
-        limit = mock.sentinel.max_results
-        result = prj.list(fields, limit)
-        self.assertEqual(expected, result)
+        result = prj.list(mock.sentinel.fields, mock.sentinel.max_results,
+                          mock.sentinel.projection, mock.sentinel.prefix,
+                          mock.sentinel.page_token)
+        self.assertEqual(expected2, result)
 
-        serv.buckets.assert_called_once_with()
-        buckets_mock.list.assert_called_once_with(project=name, fields=fields,
-                                                  maxResults=limit)
-        self.assertEqual(2, obj_mock.call_count)
-        buckets_mock.list_next.assert_called_once_with(
-            buckets_mock.list.return_value, items)
+        self.assertListEqual(
+            [mock.call(parse=True,
+                       url='https://www.googleapis.com/storage/v1/b',
+                       project=name,
+                       fields=mock.sentinel.fields,
+                       maxResults=mock.sentinel.max_results,
+                       projection=mock.sentinel.projection,
+                       prefix=mock.sentinel.prefix,
+                       pageToken=mock.sentinel.page_token),
+             mock.call(parse=True,
+                       url='https://www.googleapis.com/storage/v1/b',
+                       project=name,
+                       fields=mock.sentinel.fields,
+                       maxResults=mock.sentinel.max_results,
+                       projection=mock.sentinel.projection,
+                       prefix=mock.sentinel.prefix,
+                       pageToken=mock.sentinel.next_token)],
+            mock_request.call_args_list)
+        self.assertListEqual(
+            [mock.call(mock.sentinel.result1, creds, retry_params),
+             mock.call(mock.sentinel.result2, creds, retry_params),
+             mock.call(mock.sentinel.result3, creds, retry_params)],
+            obj_mock.call_args_list)
 
     @mock.patch('gcs_client.bucket.Bucket.obj_from_data')
     def test_create_buckets(self, obj_mock):

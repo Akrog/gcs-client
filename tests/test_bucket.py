@@ -27,6 +27,7 @@ import mock
 import requests
 
 from gcs_client import bucket
+from gcs_client import common
 
 
 class TestBucket(unittest.TestCase):
@@ -72,38 +73,50 @@ class TestBucket(unittest.TestCase):
         self.assertEqual("gcs_client.bucket.Bucket('%s') #etag: ?" % name,
                          repr(bukt))
 
+    @mock.patch('gcs_client.bucket.Bucket._request')
     @mock.patch('gcs_client.gcs_object.Object.obj_from_data')
-    def test_list(self, obj_mock):
+    def test_list(self, obj_mock, mock_request):
         """Test bucket listing."""
-        expected = [mock.sentinel.result1, mock.sentinel.result2]
-        obj_mock.side_effect = expected
-        serv = mock.Mock()
-        items = {'items': [mock.sentinel.obj1, mock.sentinel.obj2]}
-        objs_mock = serv.objects.return_value
-        objs_mock.list.return_value.execute.return_value = items
-        objs_mock.list_next.return_value = None
+        expected = [{'items': [mock.sentinel.result1, mock.sentinel.result2],
+                     'nextPageToken': mock.sentinel.next_token},
+                    {'items': [mock.sentinel.result3]}]
+        mock_request.return_value.json.side_effect = expected
 
-        bukt = bucket.Bucket(mock.sentinel.name, mock.Mock())
-        bukt._service = serv
+        expected2 = [mock.sentinel.result4, mock.sentinel.result5]
+        obj_mock.side_effect = expected2
 
-        prefix = mock.sentinel.prefix
-        limit = mock.sentinel.max_results
-        vers = mock.sentinel.versions
-        delim = mock.sentinel.delimiter
-        projection = mock.sentinel.projection
+        creds = mock.Mock()
+        retry_params = common.RetryParams.get_default()
+        bukt = bucket.Bucket('name', creds)
 
-        result = bukt.list(prefix, limit, vers, delim, projection)
-        self.assertEqual(expected, result)
+        result = bukt.list(mock.sentinel.prefix, mock.sentinel.max_results,
+                           mock.sentinel.version, mock.sentinel.delimiter,
+                           mock.sentinel.projection, mock.sentinel.page_token)
+        self.assertEqual(expected2, result)
 
-        serv.objects.assert_called_once_with()
-        objs_mock.list.assert_called_once_with(bucket=mock.sentinel.name,
-                                               delimiter=delim, prefix=prefix,
-                                               maxResults=limit,
-                                               projection=projection,
-                                               versions=vers)
-        self.assertEqual(2, obj_mock.call_count)
-        objs_mock.list_next.assert_called_once_with(
-            objs_mock.list.return_value, items)
+        self.assertListEqual(
+            [mock.call(parse=True,
+                       url='https://www.googleapis.com/storage/v1/b/name/o',
+                       prefix=mock.sentinel.prefix,
+                       maxResults=mock.sentinel.max_results,
+                       versions=mock.sentinel.version,
+                       delimiter=mock.sentinel.delimiter,
+                       projection=mock.sentinel.projection,
+                       pageToken=mock.sentinel.page_token),
+             mock.call(parse=True,
+                       url='https://www.googleapis.com/storage/v1/b/name/o',
+                       prefix=mock.sentinel.prefix,
+                       maxResults=mock.sentinel.max_results,
+                       versions=mock.sentinel.version,
+                       delimiter=mock.sentinel.delimiter,
+                       projection=mock.sentinel.projection,
+                       pageToken=mock.sentinel.next_token)],
+            mock_request.call_args_list)
+        self.assertListEqual(
+            [mock.call(mock.sentinel.result1, creds, retry_params),
+             mock.call(mock.sentinel.result2, creds, retry_params),
+             mock.call(mock.sentinel.result3, creds, retry_params)],
+            obj_mock.call_args_list)
 
     @mock.patch('gcs_client.common.GCS._request')
     def test_delete(self, request_mock):

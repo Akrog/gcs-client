@@ -231,7 +231,7 @@ class GCS(object):
         self._retry_params = retry_params or RetryParams.get_default()
 
     def _request(self, op='GET', headers=None, body=None, parse=False,
-                 ok=(requests.codes.ok,), **params):
+                 ok=(requests.codes.ok,), url=None, **params):
         """Request actions on a GCS resource.
 
         :param op: Operation to perform (GET, PUT, POST, HEAD, DELETE).
@@ -245,15 +245,19 @@ class GCS(object):
         :type parse: bool
         :param ok: Response status codes to consider as OK.
         :type ok: Iterable of integer numbers
+        :param url: Alternative url to use
+        :type url: six.string_types
         :param params: All params to send as URL params in the request.
         :returns: requests.Request
         :"""
         headers = {} if not headers else headers.copy()
         headers['Authorization'] = self._credentials.authorization
 
-        url = self.URL % tuple(requests.utils.quote(getattr(self, x))
-                               for x in self._required_attributes
-                               if x not in GCS._required_attributes)
+        if not url:
+            format_args = tuple(requests.utils.quote(getattr(self, x), safe='')
+                                for x in self._required_attributes
+                                if x not in GCS._required_attributes)
+            url = self.URL % format_args
         r = requests.request(op, url, params=params, headers=headers,
                              data=body)
 
@@ -380,29 +384,26 @@ class Listable(GCS):
 
     @is_complete
     @retry
-    @convert_exception
     def _list(self, **kwargs):
-        # Remove all args that are None
-        kwargs = {k: v for k, v in kwargs.items() if v is not None}
-        # Get child classes
-        gcs_child_cls, child_cls = self._child_info
-        # Instantiate the GCS service specific class
-        gcs_child = gcs_child_cls()
+        # Get url and child class
+        url, child_cls = self._child_info
 
         # Retrieve the list from GCS
-        req = gcs_child.list(**kwargs)
+        result = []
+        while True:
+            # Get the first page of items
+            r = self._request(parse=True, url=url, **kwargs).json()
 
-        child_list = []
-        while req:
-            resp = req.execute()
             # Transform data from GCS into classes
-            items = map(lambda b: child_cls.obj_from_data(b, self.credentials,
-                                                          self.retry_params),
-                        resp.get('items', []))
-            child_list.extend(items)
-            req = gcs_child.list_next(req, resp)
+            result.extend(child_cls.obj_from_data(b, self.credentials,
+                                                  self.retry_params)
+                          for b in r.get('items', []))
 
-        return child_list
+            kwargs['pageToken'] = r.get('nextPageToken')
+            if not kwargs['pageToken']:
+                break
+
+        return result
 
     list = _list
 
