@@ -31,7 +31,7 @@ from gcs_client import project
 
 class TestProject(unittest.TestCase):
 
-    @mock.patch('gcs_client.common.GCS.__init__')
+    @mock.patch('gcs_client.base.GCS.__init__')
     def test_init(self, mock_init):
         """Test init providing all arguments."""
         prj = project.Project(mock.sentinel.project_id,
@@ -41,7 +41,7 @@ class TestProject(unittest.TestCase):
                                           mock.sentinel.retry_params)
         self.assertEqual(mock.sentinel.project_id, prj.project_id)
 
-    @mock.patch('gcs_client.common.GCS.__init__')
+    @mock.patch('gcs_client.base.GCS.__init__')
     def test_init_defaults(self, mock_init):
         """Test init providing only required arguments."""
         prj = project.Project(mock.sentinel.project_id)

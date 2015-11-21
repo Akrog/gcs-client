@@ -32,7 +32,7 @@ from gcs_client import gcs_object
 class TestObject(unittest.TestCase):
     """Tests for Object class."""
 
-    @mock.patch('gcs_client.common.GCS.__init__')
+    @mock.patch('gcs_client.base.GCS.__init__')
     def test_init(self, mock_init):
         """Test init providing all arguments."""
         creds = mock.Mock()
@@ -45,7 +45,7 @@ class TestObject(unittest.TestCase):
         self.assertEqual(mock.sentinel.bucket, obj.bucket)
         self.assertEqual(mock.sentinel.generation, obj.generation)
 
-    @mock.patch('gcs_client.common.GCS.__init__')
+    @mock.patch('gcs_client.base.GCS.__init__')
     def test_init_defaults(self, mock_init):
         """Test init providing only required arguments."""
         obj = gcs_object.Object()
@@ -54,7 +54,7 @@ class TestObject(unittest.TestCase):
         self.assertIsNone(obj.bucket)
         self.assertIsNone(obj.generation)
 
-    @mock.patch('gcs_client.common.GCS._request')
+    @mock.patch('gcs_client.base.GCS._request')
     def test_get_data(self, request_mock):
         """Test _get_data used when accessing non existent attributes."""
         bucket = 'bucket'
@@ -84,7 +84,7 @@ class TestObject(unittest.TestCase):
         self.assertEqual("gcs_client.gcs_object.Object('%s', '%s', '%s') "
                          "#etag: ?" % (bucket, name, generation), repr(obj))
 
-    @mock.patch('gcs_client.common.GCS._request')
+    @mock.patch('gcs_client.base.GCS._request')
     def test_delete(self, request_mock):
         """Test object delete."""
         bucket = 'bucket'

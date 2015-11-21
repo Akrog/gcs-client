@@ -32,7 +32,7 @@ from gcs_client import common
 
 class TestBucket(unittest.TestCase):
 
-    @mock.patch('gcs_client.common.GCS.__init__')
+    @mock.patch('gcs_client.base.GCS.__init__')
     def test_init(self, mock_init):
         """Test init providing all arguments."""
         bukt = bucket.Bucket(mock.sentinel.name, mock.sentinel.credentials,
@@ -41,14 +41,14 @@ class TestBucket(unittest.TestCase):
                                           mock.sentinel.retry_params)
         self.assertEqual(mock.sentinel.name, bukt.name)
 
-    @mock.patch('gcs_client.common.GCS.__init__')
+    @mock.patch('gcs_client.base.GCS.__init__')
     def test_init_defaults(self, mock_init):
         """Test init providing only required arguments."""
         bukt = bucket.Bucket(mock.sentinel.name)
         mock_init.assert_called_once_with(None, None)
         self.assertEqual(mock.sentinel.name, bukt.name)
 
-    @mock.patch('gcs_client.common.GCS._request')
+    @mock.patch('gcs_client.base.GCS._request')
     def test_get_data(self, request_mock):
         """Test _get_data used when accessing non existent attributes."""
         bukt = bucket.Bucket(mock.sentinel.name)
@@ -118,7 +118,7 @@ class TestBucket(unittest.TestCase):
              mock.call(mock.sentinel.result3, creds, retry_params)],
             obj_mock.call_args_list)
 
-    @mock.patch('gcs_client.common.GCS._request')
+    @mock.patch('gcs_client.base.GCS._request')
     def test_delete(self, request_mock):
         """Test bucket delete."""
         bukt = bucket.Bucket(mock.sentinel.name, mock.Mock())

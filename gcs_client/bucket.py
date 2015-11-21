@@ -17,15 +17,16 @@ from __future__ import absolute_import
 
 import requests
 
+from gcs_client import base
 from gcs_client import common
 from gcs_client import gcs_object
 
 
-class Bucket(common.Fillable, common.Listable):
+class Bucket(base.Fillable, base.Listable):
     """GCS Bucket Object representation."""
 
-    _required_attributes = common.GCS._required_attributes + ['name']
-    URL = common.Fillable.URL + '/%s'
+    _required_attributes = base.GCS._required_attributes + ['name']
+    URL = base.Fillable.URL + '/%s'
 
     def __init__(self, name=None, credentials=None, retry_params=None):
         """Initialize a Bucket object.

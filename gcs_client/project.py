@@ -15,17 +15,18 @@
 
 from __future__ import absolute_import
 
+from gcs_client import base
 from gcs_client import bucket
 from gcs_client import common
 from gcs_client.constants import projection as gcs_projection
 from gcs_client.constants import storage_class
 
 
-class Project(common.Listable):
+class Project(base.Listable):
     """GCS Project Object representation."""
 
-    _required_attributes = common.GCS._required_attributes + ['project_id']
-    URL = common.Fillable.URL + '?project=%s'
+    _required_attributes = base.GCS._required_attributes + ['project_id']
+    URL = base.Fillable.URL + '?project=%s'
 
     def __init__(self, project_id, credentials=None, retry_params=None):
         """Initialize a Project object.
@@ -45,7 +46,7 @@ class Project(common.Listable):
 
     @property
     def _child_info(self):
-        return (common.Fillable.URL, bucket.Bucket)
+        return (base.Fillable.URL, bucket.Bucket)
 
     def list(self, fields=None, maxResults=None, projection=None, prefix=None,
              pageToken=None):

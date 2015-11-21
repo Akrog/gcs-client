@@ -25,6 +25,7 @@ import six
 
 import requests
 
+from gcs_client import base
 from gcs_client import common
 from gcs_client import errors
 
@@ -33,11 +34,11 @@ BLOCK_MULTIPLE = 256 * 1024
 DEFAULT_BLOCK_SIZE = 4 * BLOCK_MULTIPLE
 
 
-class Object(common.Fillable):
+class Object(base.Fillable):
     """GCS Stored Object Object representation."""
 
-    _required_attributes = common.GCS._required_attributes + ['bucket', 'name']
-    URL = common.Fillable.URL + '/%s/o/%s'
+    _required_attributes = base.GCS._required_attributes + ['bucket', 'name']
+    URL = base.Fillable.URL + '/%s/o/%s'
 
     def __init__(self, bucket=None, name=None, generation=None,
                  credentials=None, retry_params=None, chunksize=None):
