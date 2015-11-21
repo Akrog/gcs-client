@@ -37,6 +37,7 @@ DEFAULT_BLOCK_SIZE = 4 * BLOCK_MULTIPLE
 class Object(base.Fillable):
     """GCS Stored Object Object representation."""
 
+    kind = 'storage#objects'
     _required_attributes = base.GCS._required_attributes + ['bucket', 'name']
     URL = base.Fillable.URL + '/%s/o/%s'
 

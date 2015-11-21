@@ -25,6 +25,7 @@ from gcs_client import gcs_object
 class Bucket(base.Fillable, base.Listable):
     """GCS Bucket Object representation."""
 
+    kind = 'storage#buckets'
     _required_attributes = base.GCS._required_attributes + ['name']
     URL = base.Fillable.URL + '/%s'
 
@@ -42,14 +43,10 @@ class Bucket(base.Fillable, base.Listable):
         r = self._request(parse=True)
         return r.json()
 
-    @property
-    def _child_info(self):
-        url = (self.URL % self.name) + '/o'
-        return (url, gcs_object.Object)
-
     def list(self, prefix=None, maxResults=None, versions=None, delimiter=None,
              projection=None, pageToken=None):
-        return self._list(prefix=prefix,
+        return self._list(_list_url=(self.URL % self.name) + '/o',
+                          prefix=prefix,
                           maxResults=maxResults, versions=versions,
                           delimiter=delimiter, projection=projection,
                           pageToken=pageToken)

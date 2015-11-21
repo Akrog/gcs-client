@@ -27,6 +27,7 @@ class Project(base.Listable):
 
     _required_attributes = base.GCS._required_attributes + ['project_id']
     URL = base.Fillable.URL + '?project=%s'
+    _list_url = base.Fillable.URL
 
     def __init__(self, project_id, credentials=None, retry_params=None):
         """Initialize a Project object.
@@ -43,10 +44,6 @@ class Project(base.Listable):
         if not self.project_id:
             return None
         return self.project_id + '.appspot.com'
-
-    @property
-    def _child_info(self):
-        return (base.Fillable.URL, bucket.Bucket)
 
     def list(self, fields=None, maxResults=None, projection=None, prefix=None,
              pageToken=None):

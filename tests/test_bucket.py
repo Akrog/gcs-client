@@ -77,9 +77,11 @@ class TestBucket(unittest.TestCase):
     @mock.patch('gcs_client.gcs_object.Object.obj_from_data')
     def test_list(self, obj_mock, mock_request):
         """Test bucket listing."""
-        expected = [{'items': [mock.sentinel.result1, mock.sentinel.result2],
+        expected = [{'kind': 'storage#objects',
+                     'items': [mock.sentinel.result1, mock.sentinel.result2],
                      'nextPageToken': mock.sentinel.next_token},
-                    {'items': [mock.sentinel.result3]}]
+                    {'kind': 'storage#objects',
+                     'items': [mock.sentinel.result3]}]
         mock_request.return_value.json.side_effect = expected
 
         expected2 = [mock.sentinel.result4, mock.sentinel.result5]

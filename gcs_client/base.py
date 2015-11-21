@@ -189,19 +189,20 @@ class Listable(GCS):
 
     @common.is_complete
     @common.retry
-    def _list(self, **kwargs):
+    def _list(self, _list_url=None, **kwargs):
         # Get url and child class
-        url, child_cls = self._child_info
+        if not _list_url:
+            _list_url = self._list_url
 
         # Retrieve the list from GCS
         result = []
         while True:
             # Get the first page of items
-            r = self._request(parse=True, url=url, **kwargs).json()
+            r = self._request(parse=True, url=_list_url, **kwargs).json()
 
             # Transform data from GCS into classes
-            result.extend(child_cls.obj_from_data(b, self.credentials,
-                                                  self.retry_params)
+            result.extend(gcs_factory(r['kind'], b, self.credentials,
+                                      self.retry_params)
                           for b in r.get('items', []))
 
             kwargs['pageToken'] = r.get('nextPageToken')
@@ -212,6 +213,32 @@ class Listable(GCS):
 
     list = _list
 
-    @abc.abstractproperty
-    def _child_info(self):
+    def _list_url(self):
         raise NotImplementedError
+
+
+def all_subclasses(cls):
+    """Get all subclasses for a class recursevely."""
+    return cls.__subclasses__() + [subcls for s in cls.__subclasses__()
+                                   for subcls in all_subclasses(s)]
+
+
+gcs_classes = {}
+
+
+def gcs_factory(kind, *args, **kwargs):
+    """Return an instance for a class of kind type."""
+
+    # Build kind to class mapping if it doesn't already exist
+    if not gcs_classes:
+        subclasses = all_subclasses(GCS)
+        for subcls in subclasses:
+            # We only map classes that have the kind attribute
+            if hasattr(subcls, 'kind'):
+                gcs_classes[getattr(subcls, 'kind')] = subcls
+
+    cls = gcs_classes.get(kind)
+    # Instantiate the class, if has obj_from_data method we create the class
+    # and then call it with all the arguments and if it doesn't we just
+    # instantiate the class with the arguments.
+    return getattr(cls, 'obj_from_data', cls)(*args, **kwargs)
