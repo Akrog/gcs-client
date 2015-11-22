@@ -25,3 +25,4 @@ from gcs_client.project import Project  # noqa
 from gcs_client.credentials import Credentials  # noqa
 from gcs_client.gcs_object import *  # noqa
 from gcs_client.common import RetryParams  # noqa
+from gcs_client.prefix import Prefix  # noqa

@@ -205,6 +205,13 @@ class Listable(GCS):
                                       self.retry_params)
                           for b in r.get('items', []))
 
+            if r.get('prefixes'):
+                result.extend(gcs_factory('storage#prefix', self.name, prefix,
+                                          kwargs.get('delimiter'),
+                                          self.credentials,
+                                          self.retry_params)
+                              for prefix in r.get('prefixes', []))
+
             kwargs['pageToken'] = r.get('nextPageToken')
             if not kwargs['pageToken']:
                 break

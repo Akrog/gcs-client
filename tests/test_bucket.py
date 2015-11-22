@@ -28,6 +28,7 @@ import requests
 
 from gcs_client import bucket
 from gcs_client import common
+from gcs_client import prefix
 
 
 class TestBucket(unittest.TestCase):
@@ -119,6 +120,31 @@ class TestBucket(unittest.TestCase):
              mock.call(mock.sentinel.result2, creds, retry_params),
              mock.call(mock.sentinel.result3, creds, retry_params)],
             obj_mock.call_args_list)
+
+    @mock.patch('gcs_client.bucket.Bucket._request')
+    @mock.patch('gcs_client.prefix.Prefix.__init__', return_value=None)
+    def test_list_prefix(self, mock_init, mock_request):
+        """Test bucket listing."""
+        prefixes = ['prefix1/', 'prefix2/']
+        mock_request.return_value.json.side_effect = [
+            {'kind': 'storage#objects',
+             'items': [],
+             'prefixes': prefixes}]
+
+        creds = mock.Mock()
+        retry_params = common.RetryParams.get_default()
+        name = 'bucket_name'
+        bukt = bucket.Bucket(name, creds)
+
+        result = bukt.list(delimiter=mock.sentinel.delimiter)
+
+        self.assertEqual(len(prefixes), len(result))
+        for prefx in result:
+            self.assertIsInstance(prefx, prefix.Prefix)
+        self.assertListEqual(
+            [mock.call(name, pref, mock.sentinel.delimiter,
+                       creds, retry_params) for pref in prefixes],
+            mock_init.call_args_list)
 
     @mock.patch('gcs_client.base.GCS._request')
     def test_delete(self, request_mock):
