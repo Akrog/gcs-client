@@ -151,15 +151,19 @@ class Fillable(GCS):
         return super(Fillable, self).__getattribute__(name)
 
     def __getattr__(self, name):
+        def attr_error():
+            raise AttributeError("'%s' object has no attribute '%s'" %
+                                 (self.__class__.__name__, name))
+
         if self._data_retrieved or self._exists is False:
-            raise AttributeError
+            attr_error()
 
         try:
             data = self._get_data()
             self._exists = True
         except gcs_errors.NotFound:
             self._exists = False
-            raise AttributeError
+            attr_error()
 
         self._fill_with_data(data)
         return getattr(self, name)
