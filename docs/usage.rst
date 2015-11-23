@@ -106,6 +106,46 @@ Listing objects with a prefix
         print '\tThere are no objects'
 
 
+List contents of a bucket as a directory
+----------------------------------------
+
+We can list a bucket as if it were a directory by passing ``delimiter``
+optional argument on the ``list`` call.
+
+Following example implements ``tree`` command for a bucket.
+
+This is just for demonstration purposes, since it is not efficient because for 
+each "directory" we find we make another request to the server to list its
+contents.  It would be more efficient to request all the objects in one go
+and then rebuild the tree locally.
+
+.. code-block:: python
+
+    import gcs_client
+
+    def print_obj(obj, i, last):
+        if isinstance(obj, gcs_client.Prefix):
+            name = obj.prefix.split('/')[-2]
+        else:
+            name = obj.name.split('/')[-1]
+        print ('   ' * i) + ('└──' if last else '├──'), name
+
+    def tree(objs, indent=0):
+        if indent == 0:
+            print '.'
+        for i in range(len(objs)):
+            obj = objs[i]
+            print_obj(obj, indent, i == len(objs) - 1)
+            if isinstance(obj, gcs_client.Prefix):
+                tree(obj.list(), indent+1)
+
+    credentials = gcs_client.Credentials('private_key.json')
+    bucket = gcs_client.Bucket('bucket_name', credentials)
+
+    print '$ tree', bucket.name
+    tree(bucket.list(delimiter='/'))
+
+
 Deleting objects
 ----------------
 
