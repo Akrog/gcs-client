@@ -75,7 +75,7 @@ class GCS(object):
                                 if x not in GCS._required_attributes)
             url = self.URL % format_args
         r = requests.request(op, url, params=params, headers=headers,
-                             data=body)
+                             json=body)
 
         if r.status_code not in ok:
             raise gcs_errors.create_http_exception(r.status_code, r.content)

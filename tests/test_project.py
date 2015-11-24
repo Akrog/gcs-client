@@ -114,17 +114,17 @@ class TestProject(unittest.TestCase):
              mock.call(mock.sentinel.result3, creds, retry_params)],
             obj_mock.call_args_list)
 
+    @mock.patch('requests.request')
     @mock.patch('gcs_client.bucket.Bucket.obj_from_data')
-    def test_create_buckets(self, obj_mock):
+    def test_create_buckets(self, obj_mock, request_mock):
         """Test bucket creation."""
+        request_mock.return_value.status_code = 200
+        request_mock.return_value.json.return_value = mock.sentinel.json_data
         obj_mock.return_value = mock.sentinel.result
 
-        serv = mock.Mock()
-        insert_mock = serv.buckets.return_value.insert
-
+        name = 'project_name'
         credentials = mock.Mock()
-        prj = project.Project(mock.sentinel.project, credentials)
-        prj._service = serv
+        prj = project.Project(name, credentials)
 
         result = prj.create_bucket(mock.sentinel.name, mock.sentinel.location,
                                    mock.sentinel.storage, mock.sentinel.acl,
@@ -132,15 +132,15 @@ class TestProject(unittest.TestCase):
                                    mock.sentinel.projection)
         self.assertEqual(mock.sentinel.result, result)
 
-        serv.buckets.assert_called_once_with()
-        insert_mock.assert_called_once_with(
-            project=mock.sentinel.project,
-            predefinedAcl=mock.sentinel.acl,
-            predefinedDefaultObjectAcl=mock.sentinel.def_acl,
-            projection=mock.sentinel.projection,
-            body={'name': mock.sentinel.name,
-                  'location': mock.sentinel.location,
-                  'storageClass': mock.sentinel.storage})
-        obj_mock.assert_called_once_with(
-            insert_mock.return_value.execute.return_value,
-            credentials)
+        request_mock.assert_called_once_with(
+            'POST',
+            'https://www.googleapis.com/storage/v1/b?project=project_name',
+            headers={'Authorization': mock.ANY},
+            json={'storageClass': mock.sentinel.storage,
+                  'name': mock.sentinel.name,
+                  'location': mock.sentinel.location},
+            params={'predefinedAcl': mock.sentinel.acl,
+                    'projection': mock.sentinel.projection,
+                    'predefinedDefaultObjectAcl': mock.sentinel.def_acl})
+
+        obj_mock.assert_called_once_with(mock.sentinel.json_data, credentials)

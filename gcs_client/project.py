@@ -53,25 +53,21 @@ class Project(base.Listable):
 
     @common.is_complete
     @common.retry
-    @common.convert_exception
     def create_bucket(self, name, location='US',
                       storage_class=storage_class.NEARLINE,
                       predefined_acl=None,
                       predefined_default_obj_acl=None,
                       projection=gcs_projection.SIMPLE, **kwargs):
-        kwargs['name'] = name
-        kwargs['location'] = location
-        kwargs['storageClass'] = storage_class
 
-        req = self._service.buckets().insert(
-            project=self.project_id,
+        r = self._request(
+            parse=True,
+            op='POST',
             predefinedAcl=predefined_acl,
             predefinedDefaultObjectAcl=predefined_default_obj_acl,
             projection=projection,
-            body=kwargs)
-
-        resp = req.execute()
-        return bucket.Bucket.obj_from_data(resp, self.credentials)
+            body={'name': name, 'location': location,
+                  'storageClass': storage_class})
+        return bucket.Bucket.obj_from_data(r.json(), self.credentials)
 
     def __str__(self):
         return self.project_id

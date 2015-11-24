@@ -139,7 +139,7 @@ class TestGCS(unittest.TestCase):
         self.assertEqual(request_mock.return_value, gcs._request())
         request_mock.assert_called_once_with(
             'GET', self.test_class.URL, params={},
-            headers={'Authorization': creds.authorization}, data=None)
+            headers={'Authorization': creds.authorization}, json=None)
         self.assertFalse(quote_mock.called)
         self.assertFalse(request_mock.return_value.json.called)
 
@@ -156,7 +156,7 @@ class TestGCS(unittest.TestCase):
         self.assertEqual(request_mock.return_value, gcs._request())
         request_mock.assert_called_once_with(
             'GET', 'url_123', params={},
-            headers={'Authorization': creds.authorization}, data=None)
+            headers={'Authorization': creds.authorization}, json=None)
         self.assertTrue(quote_mock.called)
         self.assertFalse(request_mock.return_value.json.called)
 
@@ -169,7 +169,7 @@ class TestGCS(unittest.TestCase):
         self.assertRaises(gcs_errors.NotFound, gcs._request)
         request_mock.assert_called_once_with(
             'GET', self.test_class.URL, params={},
-            headers={'Authorization': creds.authorization}, data=None)
+            headers={'Authorization': creds.authorization}, json=None)
         self.assertFalse(utils_mock.quote.called)
         self.assertFalse(request_mock.return_value.json.called)
 
@@ -187,7 +187,7 @@ class TestGCS(unittest.TestCase):
             mock.sentinel.op, self.test_class.URL,
             params={'param1': mock.sentinel.param1},
             headers={'Authorization': creds.authorization, 'head': 'hello'},
-            data=mock.sentinel.body)
+            json=mock.sentinel.body)
         self.assertFalse(quote_mock.called)
         self.assertTrue(request_mock.return_value.json.called)
 
@@ -201,7 +201,7 @@ class TestGCS(unittest.TestCase):
         self.assertRaises(gcs_errors.Error, gcs._request, parse=True)
         request_mock.assert_called_once_with(
             'GET', self.test_class.URL, params={},
-            headers={'Authorization': creds.authorization}, data=None)
+            headers={'Authorization': creds.authorization}, json=None)
         self.assertFalse(quote_mock.called)
         self.assertTrue(request_mock.return_value.json.called)
 
