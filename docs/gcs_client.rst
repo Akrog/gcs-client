@@ -11,6 +11,14 @@ Subpackages
 Submodules
 ----------
 
+gcs_client.base module
+----------------------
+
+.. automodule:: gcs_client.base
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 gcs_client.bucket module
 ------------------------
 
@@ -47,6 +55,14 @@ gcs_client.gcs_object module
 ----------------------------
 
 .. automodule:: gcs_client.gcs_object
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+gcs_client.prefix module
+------------------------
+
+.. automodule:: gcs_client.prefix
     :members:
     :undoc-members:
     :show-inheritance:
