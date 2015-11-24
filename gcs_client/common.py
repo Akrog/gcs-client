@@ -20,9 +20,7 @@ import math
 import random
 import time
 
-from apiclient import errors
-
-from gcs_client import errors as gcs_errors
+from gcs_client import errors as errors
 
 
 def is_complete(f):
@@ -37,21 +35,10 @@ def is_complete(f):
     return wrapped
 
 
-def convert_exception(f):
-    """Decorator to convert from Google's apiclient Http exceptions to ours."""
-    @wraps(f)
-    def wrapped(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except errors.HttpError as exc:
-            raise gcs_errors.create_http_exception(exc.resp['status'], exc)
-    return wrapped
-
-
 # Generate default codes to retry from transient HTTP errors
 DEFAULT_RETRY_CODES = tuple(
-    code for code, (cls_name, cls) in gcs_errors.http_errors.items()
-    if cls is gcs_errors.Transient)
+    code for code, (cls_name, cls) in errors.http_errors.items()
+    if cls is errors.Transient)
 
 
 class RetryParams(object):
@@ -191,7 +178,7 @@ def retry(param='_retry_params', error_codes=DEFAULT_RETRY_CODES):
                 try:
                     result = f(self, *args, **kwargs)
                     return result
-                except gcs_errors.Http as exc:
+                except errors.Http as exc:
                     if (not retry_params or n >= retry_params.max_retries or
                             exc.code not in error_codes):
                         raise exc

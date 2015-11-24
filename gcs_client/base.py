@@ -18,7 +18,6 @@ from __future__ import absolute_import
 import abc
 import six
 
-from apiclient import discovery
 import requests
 
 from gcs_client import common
@@ -113,10 +112,7 @@ class GCS(object):
     def credentials(self, value):
         if value == getattr(self, '_credentials', not value):
             return
-
         self._credentials = value
-        self._service = discovery.build('storage', self.api_version,
-                                        credentials=self._credentials)
 
     @common.is_complete
     @common.retry

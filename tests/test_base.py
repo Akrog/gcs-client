@@ -35,87 +35,39 @@ class TestGCS(unittest.TestCase):
     def setUp(self):
         self.test_class = base.GCS
 
-    @mock.patch.object(base.discovery, 'build')
-    def test_init_without_credentials(self, mock_build):
-        """Test init without credentials tries to do discovery."""
+    def test_init(self):
+        """Test init."""
         # NOTE(geguileo): We store gcs on the instance so Fillable tests can
         # use it.
-        self.gcs = self.test_class(None)
-        self.assertIsNone(self.gcs.credentials)
-        self.assertEqual(mock_build.return_value, self.gcs._service)
-        mock_build.assert_called_once_with('storage',
-                                           self.test_class.api_version,
-                                           credentials=None)
+        self.gcs = self.test_class(mock.sentinel.credentials)
+        self.assertEqual(mock.sentinel.credentials, self.gcs.credentials)
         self.assertIs(common.RetryParams.get_default(), self.gcs._retry_params)
 
-    @mock.patch.object(base.discovery, 'build')
-    def test_init_with_credentials(self, mock_build):
-        """Test init with credentials does discovery."""
-        gcs = self.test_class(mock.sentinel.credentials)
-        self.assertEqual(mock.sentinel.credentials, gcs.credentials)
-        self.assertEqual(mock_build.return_value, gcs._service)
-        mock_build.assert_called_once_with(
-            'storage', self.test_class.api_version,
-            credentials=mock.sentinel.credentials)
-
-    @mock.patch.object(base.discovery, 'build')
-    def test_set_credentials(self, mock_build):
-        """Setting credentials does discovery."""
+    def test_set_credentials(self):
+        """Test setting credentials."""
         gcs = self.test_class(None)
-        mock_build.reset_mock()
         gcs.credentials = mock.sentinel.new_credentials
         self.assertEqual(mock.sentinel.new_credentials, gcs.credentials)
-        mock_build.assert_called_once_with(
-            'storage', self.test_class.api_version,
-            credentials=mock.sentinel.new_credentials)
 
-    @mock.patch.object(base.discovery, 'build')
-    def test_change_credentials(self, mock_build):
-        """Changing credentials does discovery with new credentials."""
+    def test_set_same_credentials(self):
+        """Test setting the same credentials."""
         gcs = self.test_class(mock.sentinel.credentials)
-        mock_build.reset_mock()
-        gcs.credentials = mock.sentinel.new_credentials
-        self.assertEqual(mock.sentinel.new_credentials, gcs.credentials)
-        mock_build.assert_called_once_with(
-            'storage', self.test_class.api_version,
-            credentials=mock.sentinel.new_credentials)
-
-    @mock.patch.object(base.discovery, 'build')
-    def test_set_same_credentials(self, mock_build):
-        """Setting same credentials doesn't do discovery."""
-        gcs = self.test_class(mock.sentinel.credentials)
-        mock_build.reset_mock()
         gcs.credentials = mock.sentinel.credentials
         self.assertEqual(mock.sentinel.credentials, gcs.credentials)
-        self.assertFalse(mock_build.called)
 
-    @mock.patch.object(base.discovery, 'build')
-    def test_clear_credentials(self, mock_build):
-        """Clearing credentials removes service."""
-        gcs = self.test_class(mock.sentinel.credentials)
-        mock_build.reset_mock()
-        gcs.credentials = None
-        self.assertIsNone(gcs.credentials)
-        mock_build.assert_called_once_with('storage',
-                                           self.test_class.api_version,
-                                           credentials=None)
-
-    @mock.patch.object(base.discovery, 'build')
-    def test_get_retry_params(self, mock_build):
+    def test_get_retry_params(self):
         """Test retry_params getter method."""
         gcs = self.test_class(mock.sentinel.credentials)
         self.assertIs(common.RetryParams.get_default(), gcs._retry_params)
         self.assertIs(common.RetryParams.get_default(), gcs.retry_params)
 
-    @mock.patch.object(base.discovery, 'build')
-    def test_set_retry_params_to_none(self, mock_build):
+    def test_set_retry_params_to_none(self):
         """Test retry_params setter method with None value."""
         gcs = self.test_class(mock.sentinel.credentials)
         gcs.retry_params = None
         self.assertIs(None, gcs.retry_params)
 
-    @mock.patch.object(base.discovery, 'build')
-    def test_set_retry_params(self, mock_build):
+    def test_set_retry_params(self):
         """Test retry_params setter method with RetryParams instance."""
         gcs = self.test_class(mock.sentinel.credentials)
         new_params = common.RetryParams()
@@ -123,8 +75,7 @@ class TestGCS(unittest.TestCase):
         self.assertIsNot(common.RetryParams.get_default(), gcs.retry_params)
         self.assertIs(new_params, gcs.retry_params)
 
-    @mock.patch.object(base.discovery, 'build')
-    def test_set_retry_params_incorrect_value(self, mock_build):
+    def test_set_retry_params_incorrect_value(self):
         """Test retry_params setter method with incorrect value."""
         gcs = self.test_class(mock.sentinel.credentials)
         self.assertRaises(AssertionError, setattr, gcs, 'retry_params', 1)
@@ -236,21 +187,19 @@ class TestFillable(TestGCS):
     def setUp(self):
         self.test_class = base.Fillable
 
-    def test_init_without_credentials(self):
+    def test_init(self):
         """Variables are initialized correctly."""
-        super(TestFillable, self).test_init_without_credentials()
+        super(TestFillable, self).test_init()
         self.assertFalse(self.gcs._data_retrieved)
         self.assertIsNone(self.gcs._exists)
 
-    @mock.patch.object(base.discovery, 'build')
-    def test_get_data(self, mock_build):
+    def test_get_data(self):
         """Class doesn't implement _get_data method."""
         fill = self.test_class(None)
         self.assertRaises(NotImplementedError, fill._get_data)
 
     @mock.patch('gcs_client.base.Fillable._get_data')
-    @mock.patch.object(base.discovery, 'build')
-    def test_auto_fill_get_existing_attr(self, mock_build, mock_get_data):
+    def test_auto_fill_get_existing_attr(self, mock_get_data):
         """Getting an attribute that exists on the model.
 
         When requesting a non exiting attribute the Fillable class will first
@@ -274,8 +223,7 @@ class TestFillable(TestGCS):
         self.assertFalse(mock_get_data.called)
 
     @mock.patch('gcs_client.base.Fillable._get_data')
-    @mock.patch.object(base.discovery, 'build')
-    def test_auto_fill_skip_assignment(self, mock_build, mock_get_data):
+    def test_auto_fill_skip_assignment(self, mock_get_data):
         """Getting an attribute skipping existing attribute.
 
         When requesting a non exiting attribute the Fillable class will first
@@ -310,8 +258,7 @@ class TestFillable(TestGCS):
         self.assertFalse(mock_get_data.called)
 
     @mock.patch('gcs_client.base.Fillable._get_data')
-    @mock.patch.object(base.discovery, 'build')
-    def test_auto_fill_get_nonexistent_attr(self, mock_build, mock_get_data):
+    def test_auto_fill_get_nonexistent_attr(self, mock_get_data):
         """Getting an attribute that exists on the model.
 
         When requesting a non exiting attribute the Fillable class will first
@@ -335,8 +282,7 @@ class TestFillable(TestGCS):
         self.assertFalse(mock_get_data.called)
 
     @mock.patch('gcs_client.base.Fillable._get_data')
-    @mock.patch.object(base.discovery, 'build')
-    def test_auto_fill_doesnt_exist(self, mock_build, mock_get_data):
+    def test_auto_fill_doesnt_exist(self, mock_get_data):
         """Raises Attribute error for non existing resource."""
         mock_get_data.side_effect = gcs_errors.NotFound()
         fill = self.test_class(None)
@@ -346,8 +292,7 @@ class TestFillable(TestGCS):
         mock_get_data.assert_called_once_with()
 
     @mock.patch('gcs_client.base.Fillable._get_data')
-    @mock.patch.object(base.discovery, 'build')
-    def test_auto_fill_other_http_error(self, mock_build, mock_get_data):
+    def test_auto_fill_other_http_error(self, mock_get_data):
         """Raises HTTP exception on non expected HTTP exceptions."""
         mock_get_data.side_effect = gcs_errors.BadRequest()
         fill = self.test_class(None)
@@ -357,8 +302,7 @@ class TestFillable(TestGCS):
         mock_get_data.assert_called_once_with()
 
     @mock.patch('gcs_client.base.Fillable._get_data')
-    @mock.patch.object(base.discovery, 'build')
-    def test_obj_from_data(self, mock_build, mock_get_data):
+    def test_obj_from_data(self, mock_get_data):
         """Test obj_from_data class method."""
         data = {'name': 'my_name', 'one_entry_dict': {'value': '1dict'},
                 'multi_entry_dict': {1: 1, 2: 2}}
