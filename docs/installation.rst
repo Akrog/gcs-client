@@ -2,11 +2,19 @@
 Installation
 ============
 
-At the command line::
+At the command line:
+
+.. code-block:: bash
 
     $ easy_install gcs-client
 
-Or, if you have virtualenvwrapper installed::
 
-    $ mkvirtualenv gcs-client
-    $ pip install gcs-client
+If you have pip installed:
+
+.. code-block:: bash
+
+    $ pip install --upgrade gcs-client
+
+
+It is good practice to use virtual environments, be it using virtualenv or
+virtualenvwrapper.

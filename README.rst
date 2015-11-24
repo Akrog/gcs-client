@@ -44,6 +44,15 @@ For now only basic functionality is available:
 * Writing an object
 * Configurable retries with Truncated Exponential Backoff
 
+Installation
+------------
+
+To install all you need to do is run:
+
+.. code-block:: bash
+
+    $ pip install --upgrade gcs-client
+
 
 Usage Example
 -------------
