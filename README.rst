@@ -53,7 +53,6 @@ To install all you need to do is run:
 
     $ pip install --upgrade gcs-client
 
-
 Usage Example
 -------------
 
@@ -90,8 +89,24 @@ Once you have the credentials you can start using gcs_client to access your proj
 
 More examples can be found in the documentation, in the Usage section.
 
+Reporting an issue
+------------------
+
+If you've found an issue with gcs-client here's how you can report the problem:
+
+- Preferred method is filing a bug on GitHub:
+
+  1. Go to project's `issue tracker on GitHub`_
+  2. Search for existing issues using the search field at the top of the page
+  3. File a new issue with information on the problem
+  4. Thanks for helping make gcs-client better
+
+- If you don't have a GitHub account and don't wish to create one you can just
+  drop me an email.
+
 
 .. _Google's appengine-gcs-client: https://github.com/GoogleCloudPlatform/appengine-gcs-client
 .. _Google: https://cloud.google.com/storage/docs/overview
 .. _Google Developers Console: https://console.developers.google.com
 .. _Credentials section: https://console.developers.google.com/apis/credentials
+.. _issue tracker on GitHub: https://github.com/Akrog/gcs-client/issues
