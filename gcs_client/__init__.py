@@ -18,7 +18,7 @@ from __future__ import absolute_import
 
 __author__ = 'Gorka Eguileor'
 __email__ = 'gorka@eguileor.com'
-__version__ = '0.1.4'
+__version__ = '0.2.0'
 
 from gcs_client.bucket import Bucket  # noqa
 from gcs_client.project import Project  # noqa
