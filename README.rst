@@ -8,7 +8,7 @@ GCS-Client
 .. image:: https://img.shields.io/pypi/v/gcs-client.svg
         :target: https://pypi.python.org/pypi/gcs-client
 
-.. image:: https://coveralls.io/repos/Akrog/gcs-client/badge.svg
+.. image:: https://img.shields.io/coveralls/Akrog/gcs-client/master.svg
          :target: https://coveralls.io/github/Akrog/gcs-client
 
 .. image:: https://readthedocs.org/projects/gcs-client/badge/?version=latest
