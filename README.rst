@@ -79,6 +79,13 @@ Once you have the credentials you can start using gcs_client to access your proj
 
     # List the objects in the bucket
     objects = bucket.list()
+    if not objects:
+        print 'There are no objects, creating one'
+        filename = '/tmp/my_file.txt'
+        with bucket.open(filename, 'w') as f:
+            f.write('this is a test file\n' * 100)
+        objects = [gcs_client.Object(bucket.name, filename, credentials=credentials)]
+
     if objects:
         print '\t','\n\t'.join(map(lambda o: o.name + ' has %s bytes' % o.size, objects))
         # Read the contents from the first file
