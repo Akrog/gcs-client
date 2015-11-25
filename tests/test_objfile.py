@@ -196,8 +196,9 @@ class TestObjFile(unittest.TestCase):
         self.access_token = 'access_token'
         creds = mock.Mock()
         creds.authorization = 'Bearer ' + self.access_token
-        with mock.patch(method, **{'return_value.status_code': 200,
-                                   'return_value.content': '{"size": "123"}'}):
+        ret_val = mock.Mock(status_code=200,  content='{"size": "123"}',
+                            headers={'Location': mock.sentinel.location})
+        with mock.patch(method, return_value=ret_val):
             f = gcs_object.GCSObjFile(self.bucket, self.name, creds, mode)
 
         return f
@@ -319,6 +320,75 @@ class TestObjFile(unittest.TestCase):
         self.assertFalse(get_mock.called)
 
         f.close()
+
+    @mock.patch('requests.put', **{'return_value.status_code': 200})
+    def test_write_all_fits_in_1_chunk(self, put_mock):
+        f = self._open('w')
+        data = b'*' * (f._chunksize - 1)
+        f.write(data)
+
+        # Since we haven't written enough data we shouldn't have sent anything
+        self.assertFalse(put_mock.called)
+
+        # Closing the file will trigger sending the data
+        f.close()
+        headers = {'Authorization': 'Bearer ' + self.access_token,
+                   'Content-Range': 'bytes 0-%s/%s' % (len(data) - 1,
+                                                       len(data))}
+        put_mock.assert_called_once_with(mock.sentinel.location, data=data,
+                                         headers=headers)
+
+    @mock.patch('requests.put')
+    def test_write_all_multiple_chunks(self, put_mock):
+        put_mock.side_effect = [mock.Mock(status_code=308),
+                                mock.Mock(status_code=200)]
+        f = self._open('w')
+        data1 = b'*' * (f._chunksize - 1)
+        f.write(data1)
+
+        # Since we haven't written enough data we shouldn't have sent anything
+        self.assertFalse(put_mock.called)
+
+        data2 = b'-' * f._chunksize
+        f.write(data2)
+
+        # This second write will trigger 1 data send
+        headers = {'Authorization': 'Bearer ' + self.access_token,
+                   'Content-Range': 'bytes 0-%s/*' % (f._chunksize - 1)}
+        put_mock.assert_called_once_with(mock.sentinel.location,
+                                         data=data1 + data2[0:1],
+                                         headers=headers)
+        put_mock.reset_mock()
+
+        # Closing the file will trigger sending the rest of the data
+        f.close()
+        headers['Content-Range'] = 'bytes %s-%s/%s' % (f._chunksize,
+                                                       (f._chunksize * 2) - 2,
+                                                       f._chunksize * 2 - 1)
+        put_mock.assert_called_once_with(mock.sentinel.location,
+                                         data=data2[1:],
+                                         headers=headers)
+
+    @mock.patch('requests.put', **{'return_value.status_code': 200})
+    def test_write_exactly_1_chunk(self, put_mock):
+        put_mock.side_effect = [mock.Mock(status_code=308),
+                                mock.Mock(status_code=200)]
+        f = self._open('w')
+        data = b'*' * f._chunksize
+
+        # This will trigger sending the data
+        f.write(data)
+        headers = {'Authorization': 'Bearer ' + self.access_token,
+                   'Content-Range': 'bytes 0-%s/*' % (len(data) - 1)}
+        put_mock.assert_called_once_with(mock.sentinel.location, data=data,
+                                         headers=headers)
+
+        # Closing the file will trigger sending the finalization of the file
+        put_mock.reset_mock()
+        f.close()
+        headers['Content-Range'] = 'bytes */%s' % f._chunksize
+        put_mock.assert_called_once_with(mock.sentinel.location, data=b'',
+                                         headers=headers)
 
     @mock.patch('requests.get')
     def test_read_all_multiple_chunks(self, get_mock):
