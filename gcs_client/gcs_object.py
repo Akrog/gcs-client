@@ -35,7 +35,76 @@ DEFAULT_BLOCK_SIZE = 4 * BLOCK_MULTIPLE
 
 
 class Object(base.Fillable):
-    """GCS Stored Object Object representation."""
+    """GCS Stored Object Object representation.
+
+    :ivar bucket: The name of the bucket containing this object.
+    :vartype bucket: string
+
+    :ivar contentType: Content-Type of the object data.
+    :vartype contentType: string
+
+    :ivar crc32c: CRC32c checksum, as described in RFC 4960, Appendix B;
+                  encoded using base64 in big-endian byte order.
+    :vartype crc32c: string
+
+    :ivar etag: HTTP 1.1 Entity tag for the object.
+    :vartype etag: string
+
+    :ivar generation: The content generation of this object. Used for object
+                      versioning.
+    :vartype generation: long
+
+    :ivar id: The ID of the object.
+    :vartype id: string
+
+    :ivar kind: The kind of item this is. For objects, this is always
+                storage#object.
+    :vartype kind: string
+
+    :ivar md5Hash: MD5 hash of the data; encoded using base64.
+    :vartype md5Hash: string
+
+    :ivar mediaLink: Media download link.
+    :vartype mediaLink: string
+
+    :ivar metadata: User-provided metadata, in key/value pairs.
+    :vartype metadata: dict
+
+    :ivar metageneration: The version of the metadata for this object at this
+                          generation.  Used for preconditions and for
+                          detecting changes in metadata.  A metageneration
+                          number is only meaningful in the context of a
+                          particular generation of a particular object.
+    :vartype metageneration: long
+
+    :ivar name: The name of this object.
+    :vartype name: string
+
+    :ivar owner: The owner of the object.  This will always be the uploader of
+                 the object.  Contains entity and entityId keys.
+    :vartype owner: dict
+
+    :ivar selfLink: The link to this object.
+    :vartype selfLink: string
+
+    :ivar size: Content-Length of the data in bytes.
+    :vartype size: unsigned long
+
+    :ivar storageClass: Storage class of the object.
+    :vartype storageClass: string
+
+    :ivar timeCreated: The creation time of the object in RFC 3339 format.
+    :vartype timeCreated: string
+
+    :ivar timeDeleted: The deletion time of the object in RFC 3339 format. Will
+                       be None if this version of the object has not been
+                       deleted.
+    :vartype timeDeleted: string
+
+    :ivar updated: The modification time of the object metadata in RFC 3339
+                   format.
+    :vartype updated: string
+    """
 
     kind = 'storage#objects'
     timeDeleted = None
@@ -56,7 +125,7 @@ class Object(base.Fillable):
                            default).
         :type generation: long
         :param credentials: A credentials object to authorize the connection.
-        :type credentials: gcs_client.Credentials
+        :type credentials: Credentials
         :param retry_params: Retry configuration used for communications with
                              GCS.  If None is passed default retries will be
                              used.
