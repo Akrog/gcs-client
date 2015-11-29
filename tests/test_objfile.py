@@ -146,10 +146,10 @@ class TestObjFile(unittest.TestCase):
         access_token = 'access_token'
         creds = mock.Mock()
         creds.get_access_token.return_value.access_token = access_token
-        name = 'var/log/messages.log'
+        name = 'var/log/message.log'
         bucket = '?mybucket'
-        expected_url = gcs_object.GCSObjFile.URL % ('%3Fmybucket',
-                                                    'var%2Flog%2Fmessages.log')
+        expected_url = gcs_object.GCSObjFile._URL % ('%3Fmybucket',
+                                                     'var%2Flog%2Fmessage.log')
 
         self.assertRaises(IOError, gcs_object.GCSObjFile, bucket, name, creds,
                           'r')

@@ -89,7 +89,7 @@ class TestGCS(unittest.TestCase):
         gcs = self.test_class(creds)
         self.assertEqual(request_mock.return_value, gcs._request())
         request_mock.assert_called_once_with(
-            'GET', self.test_class.URL, params={},
+            'GET', self.test_class._URL, params={},
             headers={'Authorization': creds.authorization}, json=None)
         self.assertFalse(quote_mock.called)
         self.assertFalse(request_mock.return_value.json.called)
@@ -103,7 +103,7 @@ class TestGCS(unittest.TestCase):
         setattr(gcs, 'size', 123)
         quote_mock.return_value = 123
         gcs._required_attributes = list(gcs._required_attributes) + ['size']
-        gcs.URL = 'url_%s'
+        gcs._URL = 'url_%s'
         self.assertEqual(request_mock.return_value, gcs._request())
         request_mock.assert_called_once_with(
             'GET', 'url_123', params={},
@@ -119,7 +119,7 @@ class TestGCS(unittest.TestCase):
         gcs = self.test_class(creds)
         self.assertRaises(gcs_errors.NotFound, gcs._request)
         request_mock.assert_called_once_with(
-            'GET', self.test_class.URL, params={},
+            'GET', self.test_class._URL, params={},
             headers={'Authorization': creds.authorization}, json=None)
         self.assertFalse(utils_mock.quote.called)
         self.assertFalse(request_mock.return_value.json.called)
@@ -135,7 +135,7 @@ class TestGCS(unittest.TestCase):
                            param1=mock.sentinel.param1)
         self.assertEqual(request_mock.return_value, res)
         request_mock.assert_called_once_with(
-            mock.sentinel.op, self.test_class.URL,
+            mock.sentinel.op, self.test_class._URL,
             params={'param1': mock.sentinel.param1},
             headers={'Authorization': creds.authorization, 'head': 'hello'},
             json=mock.sentinel.body)
@@ -151,7 +151,7 @@ class TestGCS(unittest.TestCase):
         gcs = self.test_class(creds)
         self.assertRaises(gcs_errors.Error, gcs._request, parse=True)
         request_mock.assert_called_once_with(
-            'GET', self.test_class.URL, params={},
+            'GET', self.test_class._URL, params={},
             headers={'Authorization': creds.authorization}, json=None)
         self.assertFalse(quote_mock.called)
         self.assertTrue(request_mock.return_value.json.called)
@@ -303,10 +303,10 @@ class TestFillable(TestGCS):
 
     @mock.patch('gcs_client.base.Fillable._get_data')
     def test_obj_from_data(self, mock_get_data):
-        """Test obj_from_data class method."""
+        """Test _obj_from_data class method."""
         data = {'name': 'my_name', 'one_entry_dict': {'value': '1dict'},
                 'multi_entry_dict': {1: 1, 2: 2}}
-        fill = self.test_class.obj_from_data(data, mock.sentinel.credentials)
+        fill = self.test_class._obj_from_data(data, mock.sentinel.credentials)
         self.assertFalse(fill._exists)
         self.assertTrue(fill._data_retrieved)
         self.assertEqual('my_name', fill.name)

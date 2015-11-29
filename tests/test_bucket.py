@@ -75,7 +75,7 @@ class TestBucket(unittest.TestCase):
                          repr(bukt))
 
     @mock.patch('gcs_client.bucket.Bucket._request')
-    @mock.patch('gcs_client.gcs_object.Object.obj_from_data')
+    @mock.patch('gcs_client.gcs_object.Object._obj_from_data')
     def test_list(self, obj_mock, mock_request):
         """Test bucket listing."""
         expected = [{'kind': 'storage#objects',

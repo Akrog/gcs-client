@@ -67,7 +67,7 @@ class TestProject(unittest.TestCase):
         self.assertEqual(name, str(prj))
 
     @mock.patch('gcs_client.project.Project._request')
-    @mock.patch('gcs_client.bucket.Bucket.obj_from_data')
+    @mock.patch('gcs_client.bucket.Bucket._obj_from_data')
     def test_list(self, obj_mock, mock_request):
         """Test default bucket listing."""
         expected = [{'kind': 'storage#buckets',
@@ -115,7 +115,7 @@ class TestProject(unittest.TestCase):
             obj_mock.call_args_list)
 
     @mock.patch('requests.request')
-    @mock.patch('gcs_client.bucket.Bucket.obj_from_data')
+    @mock.patch('gcs_client.bucket.Bucket._obj_from_data')
     def test_create_buckets(self, obj_mock, request_mock):
         """Test bucket creation."""
         request_mock.return_value.status_code = 200

@@ -39,7 +39,7 @@ class Object(base.Fillable):
 
     kind = 'storage#objects'
     _required_attributes = base.GCS._required_attributes + ['bucket', 'name']
-    URL = base.Fillable.URL + '/%s/o/%s'
+    _URL = base.Fillable._URL + '/%s/o/%s'
 
     def __init__(self, bucket=None, name=None, generation=None,
                  credentials=None, retry_params=None, chunksize=None):
@@ -151,8 +151,8 @@ class GCSObjFile(object):
     Instances support context manager behavior.
     """
 
-    URL = 'https://www.googleapis.com/storage/v1/b/%s/o/%s'
-    URL_UPLOAD = 'https://www.googleapis.com/upload/storage/v1/b/%s/o'
+    _URL = 'https://www.googleapis.com/storage/v1/b/%s/o/%s'
+    _URL_UPLOAD = 'https://www.googleapis.com/upload/storage/v1/b/%s/o'
 
     def __init__(self, bucket, name, credentials, mode='r', chunksize=None,
                  retry_params=None, generation=None):
@@ -229,7 +229,7 @@ class GCSObjFile(object):
         safe_bucket = requests.utils.quote(self.bucket, safe='')
         safe_name = requests.utils.quote(self.name, safe='')
         if self._is_readable():
-            self._location = self.URL % (safe_bucket, safe_name)
+            self._location = self._URL % (safe_bucket, safe_name)
             params = {'fields': 'size', 'generation': self._generation}
             headers = {'Authorization': self._credentials.authorization}
             r = requests.get(self._location, params=params, headers=headers)
@@ -241,7 +241,7 @@ class GCSObjFile(object):
 
         else:
             self.size = 0
-            initial_url = self.URL_UPLOAD % safe_bucket
+            initial_url = self._URL_UPLOAD % safe_bucket
             params = {'uploadType': 'resumable', 'name': self.name}
             headers = {'x-goog-resumable': 'start',
                        'Authorization': self._credentials.authorization,

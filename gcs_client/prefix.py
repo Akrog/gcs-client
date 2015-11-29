@@ -49,7 +49,7 @@ class Prefix(base.Listable):
         :type retry_params: RetryParams or NoneType
         """
         super(Prefix, self).__init__(credentials, retry_params)
-        self.URL = '%s/%s/o' % (base.GCS.URL, name)
+        self._URL = '%s/%s/o' % (base.GCS._URL, name)
         self.name = name
         self.prefix = prefix
         self.delimiter = delimiter
@@ -121,7 +121,7 @@ class Prefix(base.Listable):
         """
         if delimiter is None:
             delimiter = self.delimiter
-        return self._list(_list_url=self.URL, prefix=prefix or self.prefix,
+        return self._list(_list_url=self._URL, prefix=prefix or self.prefix,
                           maxResults=maxResults, versions=versions,
                           delimiter=delimiter,
                           projection=projection,

@@ -26,8 +26,8 @@ class Project(base.Listable):
     """GCS Project Object representation."""
 
     _required_attributes = base.GCS._required_attributes + ['project_id']
-    URL = base.Fillable.URL + '?project=%s'
-    _list_url = base.Fillable.URL
+    _URL = base.Fillable._URL + '?project=%s'
+    _list_url = base.Fillable._URL
 
     def __init__(self, project_id, credentials=None, retry_params=None):
         """Initialize a Project object.
@@ -160,7 +160,7 @@ class Project(base.Listable):
             projection=projection,
             body={'name': name, 'location': location,
                   'storageClass': storage_class})
-        return bucket.Bucket.obj_from_data(r.json(), self.credentials)
+        return bucket.Bucket._obj_from_data(r.json(), self.credentials)
 
     def __str__(self):
         return self.project_id

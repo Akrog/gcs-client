@@ -25,11 +25,9 @@ from gcs_client import errors as gcs_errors
 
 
 class GCS(object):
-    api_version = 'v1'
-
     _required_attributes = ['credentials']
 
-    URL = 'https://www.googleapis.com/storage/v1/b'
+    _URL = 'https://www.googleapis.com/storage/v1/b'
 
     def __init__(self, credentials, retry_params=None):
         """Base GCS initialization.
@@ -72,7 +70,7 @@ class GCS(object):
             format_args = tuple(requests.utils.quote(getattr(self, x), safe='')
                                 for x in self._required_attributes
                                 if x not in GCS._required_attributes)
-            url = self.URL % format_args
+            url = self._URL % format_args
         r = requests.request(op, url, params=params, headers=headers,
                              json=body)
 
@@ -137,7 +135,7 @@ class Fillable(GCS):
         self._exists = None
 
     @classmethod
-    def obj_from_data(cls, data, credentials=None, retry_params=None):
+    def _obj_from_data(cls, data, credentials=None, retry_params=None):
         obj = cls(credentials=credentials, retry_params=retry_params)
         obj._fill_with_data(data)
         return obj
@@ -247,7 +245,7 @@ def gcs_factory(kind, *args, **kwargs):
                 gcs_classes[getattr(subcls, 'kind')] = subcls
 
     cls = gcs_classes.get(kind)
-    # Instantiate the class, if has obj_from_data method we create the class
+    # Instantiate the class, if has _obj_from_data method we create the class
     # and then call it with all the arguments and if it doesn't we just
     # instantiate the class with the arguments.
-    return getattr(cls, 'obj_from_data', cls)(*args, **kwargs)
+    return getattr(cls, '_obj_from_data', cls)(*args, **kwargs)

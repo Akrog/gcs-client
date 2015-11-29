@@ -46,7 +46,7 @@ class TestPrefix(unittest.TestCase):
 
         self.assertEqual(
             'https://www.googleapis.com/storage/v1/b/bucket_name/o',
-            prefx.URL)
+            prefx._URL)
         self.assertEqual(name, prefx.name)
         self.assertEqual(mock.sentinel.prefix, prefx.prefix)
         self.assertEqual(mock.sentinel.delimiter, prefx.delimiter)
