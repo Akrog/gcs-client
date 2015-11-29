@@ -44,6 +44,9 @@ class TestObject(unittest.TestCase):
         self.assertEqual(mock.sentinel.name, obj.name)
         self.assertEqual(mock.sentinel.bucket, obj.bucket)
         self.assertEqual(mock.sentinel.generation, obj.generation)
+        self.assertEqual('storage#objects', obj.kind)
+        self.assertDictEqual({}, obj.metadata)
+        self.assertIsNone(obj.timeDeleted)
 
     @mock.patch('gcs_client.base.GCS.__init__')
     def test_init_defaults(self, mock_init):

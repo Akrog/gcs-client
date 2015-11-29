@@ -38,6 +38,8 @@ class Object(base.Fillable):
     """GCS Stored Object Object representation."""
 
     kind = 'storage#objects'
+    timeDeleted = None
+    metadata = {}
     _required_attributes = base.GCS._required_attributes + ['bucket', 'name']
     _URL = base.Fillable._URL + '/%s/o/%s'
 
