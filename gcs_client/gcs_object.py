@@ -200,6 +200,7 @@ class GCSObjFile(object):
         self._buffer = _Buffer()
         self._retry_params = retry_params
         self._generation = generation
+        self.closed = True
         try:
             self._open()
         except errors.NotFound:
