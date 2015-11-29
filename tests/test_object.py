@@ -121,3 +121,20 @@ class TestObject(unittest.TestCase):
                                           mock.sentinel.chunksize,
                                           mock.sentinel.retry_params,
                                           mock.sentinel.generation)
+
+    @mock.patch('gcs_client.gcs_object.GCSObjFile')
+    def test_open_with_chunksize(self, mock_file):
+        """Test open object passing chunk in the object."""
+        creds = mock.Mock()
+        obj = gcs_object.Object(mock.sentinel.bucket, mock.sentinel.name,
+                                mock.sentinel.generation, creds,
+                                mock.sentinel.retry_params,
+                                mock.sentinel.chunksize)
+        self.assertEqual(mock_file.return_value,
+                         obj.open(mock.sentinel.mode, mock.sentinel.new_cs))
+        mock_file.assert_called_once_with(mock.sentinel.bucket,
+                                          mock.sentinel.name, creds,
+                                          mock.sentinel.mode,
+                                          mock.sentinel.new_cs,
+                                          mock.sentinel.retry_params,
+                                          mock.sentinel.generation)

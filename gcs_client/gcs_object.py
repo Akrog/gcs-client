@@ -118,16 +118,21 @@ class Object(base.Fillable):
                       ifMetagenerationNotMatch=if_metageneration_not_match)
 
     @common.is_complete
-    def open(self, mode='r'):
+    def open(self, mode='r', chunksize=None):
         """Open this object.
 
         :param mode: Mode to open the file with, 'r' for read and 'w' for
                      writing are only supported formats.  Default is 'r' if
                      this argument is not provided.
         :type mode: String
+        :param chunksize: Size in bytes of the payload to send/receive to/from
+                          GCS.  Default chunksize is the one defined on
+                          object's initialization.
+        :type chunksize: int
         """
         return GCSObjFile(self.bucket, self.name, self._credentials, mode,
-                          self._chunksize, self.retry_params, self.generation)
+                          chunksize or self._chunksize, self.retry_params,
+                          self.generation)
 
     def __str__(self):
         return '%s/%s' % (self.bucket, self.name)
