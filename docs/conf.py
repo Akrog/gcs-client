@@ -100,7 +100,7 @@ exclude_patterns = ['_build']
 pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
-#modindex_common_prefix = []
+modindex_common_prefix = ['gcs_client.']
 
 # If true, keep warnings as "system message" paragraphs in the built
 # documents.
@@ -273,3 +273,15 @@ texinfo_documents = [
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+
+# Group members by type
+autodoc_member_order = 'groupwise'
+
+# Include __init__ methods
+autoclass_content = 'both'
+
+# Autodoc directive flags that should be automatically applied to all autodoc
+# directives.
+autodoc_default_flags = ['members', 'undoc-members', 'inherited-members',
+                         'show-inheritance']

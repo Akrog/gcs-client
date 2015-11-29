@@ -67,9 +67,9 @@ coverage-html:
 	$(BROWSER) htmlcov/index.html
 
 docs:
-	rm -f docs/gcs_client.rst
-	rm -f docs/modules.rst
-	sphinx-apidoc -o docs/ gcs_client
+	rm -f docs/api/*.rst
+	# Create individual files, and exclude common and base modules.
+	sphinx-apidoc -e -M -o docs/api gcs_client gcs_client/base.py gcs_client/common.py
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 	$(BROWSER) docs/_build/html/index.html
