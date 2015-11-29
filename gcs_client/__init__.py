@@ -21,6 +21,7 @@ __email__ = 'gorka@eguileor.com'
 __version__ = '0.2.0'
 
 from gcs_client.bucket import Bucket  # noqa
+from gcs_client import constants  # noqa
 from gcs_client.project import Project  # noqa
 from gcs_client.credentials import Credentials  # noqa
 from gcs_client.gcs_object import *  # noqa

@@ -19,7 +19,7 @@ import json
 
 from oauth2client import client as oauth2_client
 
-from gcs_client.constants import scope as gcs_scope
+from gcs_client import constants
 from gcs_client import errors
 
 
@@ -28,13 +28,13 @@ class Credentials(oauth2_client.SignedJwtAssertionCredentials):
 
     common_url = 'https://www.googleapis.com/auth/'
     scope_urls = {
-        gcs_scope.READER: 'devstorage.read_only',
-        gcs_scope.WRITER: 'devstorage.read_write',
-        gcs_scope.OWNER: 'devstorage.full_control',
-        gcs_scope.CLOUD: 'cloud-platform',
+        constants.SCOPE_READER: 'devstorage.read_only',
+        constants.SCOPE_WRITER: 'devstorage.read_write',
+        constants.SCOPE_OWNER: 'devstorage.full_control',
+        constants.SCOPE_CLOUD: 'cloud-platform',
     }
 
-    def __init__(self, key_file_name, email=None, scope=gcs_scope.OWNER):
+    def __init__(self, key_file_name, email=None, scope=constants.SCOPE_OWNER):
         """Initialize credentials used for all GCS operations.
 
         Create OAuth 2.0 credentials to access GCS from a JSON file or a P12

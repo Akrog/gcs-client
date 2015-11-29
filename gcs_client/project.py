@@ -18,8 +18,7 @@ from __future__ import absolute_import
 from gcs_client import base
 from gcs_client import bucket
 from gcs_client import common
-from gcs_client.constants import projection as gcs_projection
-from gcs_client.constants import storage_class
+from gcs_client import constants
 
 
 class Project(base.Listable):
@@ -100,10 +99,10 @@ class Project(base.Listable):
     @common.is_complete
     @common.retry
     def create_bucket(self, name, location='US',
-                      storage_class=storage_class.NEARLINE,
+                      storage_class=constants.STORAGE_NEARLINE,
                       predefined_acl=None,
                       predefined_default_obj_acl=None,
-                      projection=gcs_projection.SIMPLE, **kwargs):
+                      projection=constants.PROJECTION_SIMPLE, **kwargs):
         """Create a new bucket in the project.
 
         Google Cloud Storage uses a flat namespace, so you can't create a
@@ -126,28 +125,33 @@ class Project(base.Listable):
         :param storage_class: The bucket's storage class. This defines how
                               objects in the bucket are stored and determines
                               the SLA and the cost of storage.  Value must be
-                              one of gcs_client.constants.storage_class, and
+                              one of gcs_client.constants.STORAGE_*, and
                               they include STANDARD, NEARLINE and
                               DURABLE_REDUCED_AVAILABILITY.  Defaults to
-                              NEARLINE.
+                              gcs_client.constants.STORAGE_NEARLINE.
         :type storage_class: String
         :param predefined_acl: Apply a predefined set of access controls to
                                this bucket.  Acceptable values from
-                               gcs_client.constants.acl are AUTH_READ, PRIVATE,
-                               PROJECT_PRIVATE, PUBLIC_R, and PUBLIC_RW
+                               gcs_client.ACL_* are ACL_AUTH_READ, ACL_PRIVATE,
+                               ACL_PROJECT_PRIVATE, ACL_PUBLIC_R, and
+                               ACL_PUBLIC_RW
         :type predefined_acl: String
         :param predefined_default_obj_acl: Apply a predefined set of default
                                            object access controls to this
                                            bucket.  Acceptable values from
-                                           gcs_client.constants.acl are
-                                           AUTH_READ, OWNER_FULL, OWNER_READ,
-                                           PRIVATE, PROJECT_PRIVATE, and
-                                           PUBLIC_R
+                                           gcs_client.constants.ACL_* are
+                                           ACL_AUTH_READ, ACL_OWNER_FULL,
+                                           ACL_OWNER_READ, ACL_PRIVATE,
+                                           ACL_PROJECT_PRIVATE, and
+                                           ACL_PUBLIC_R
         :type predefined_default_obj_acl: String
-        :param projection: Set of properties to return. Defaults to noAcl.
-                           Acceptable values are:
-                               "full": Include all properties.
-                               "noAcl": Omit the acl property.
+        :param projection: Set of properties to return. Defaults to
+                           PROJECTION_SIMPLE.
+                           Acceptable values from gcs_client.constants are:
+                               - PROJECTION_FULL ('full'): Include all
+                                 properties.
+                               - PROJECTION_SIMPLE ('noAcl'): Omit the acl
+                                 property.
         :type projection: String
         :returns: A new Bucket instance
         :rtype: gcs_client.Bucket

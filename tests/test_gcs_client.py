@@ -61,3 +61,7 @@ class TestGcs_client(unittest.TestCase):
     def test_errors_accessible(self):
         from gcs_client import errors
         self.assertIs(errors, gcs_client.errors)
+
+    def test_constants_accessible(self):
+        from gcs_client import constants
+        self.assertIs(constants, gcs_client.constants)

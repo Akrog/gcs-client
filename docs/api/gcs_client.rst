@@ -6,19 +6,13 @@ gcs_client package
     :undoc-members:
     :show-inheritance:
 
-Subpackages
------------
-
-.. toctree::
-
-    gcs_client.constants
-
 Submodules
 ----------
 
 .. toctree::
 
    gcs_client.bucket
+   gcs_client.constants
    gcs_client.credentials
    gcs_client.errors
    gcs_client.gcs_object
