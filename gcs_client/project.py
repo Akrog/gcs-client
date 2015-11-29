@@ -34,19 +34,65 @@ class Project(base.Listable):
 
         :param project_id: Project id as listed in Google's project management
                            https://console.developers.google.com/project.
+        :type project_id: String
         :param credentials: A credentials object to authorize the connection.
+        :type credentials: gcs_client.Credentials
+        :param retry_params: Retry configuration used for communications with
+                             GCS.  If None is passed default retries will be
+                             used.
+        :type retry_params: RetryParams or NoneType
         """
         super(Project, self).__init__(credentials, retry_params)
         self.project_id = project_id
 
     @property
     def default_bucket_name(self):
+        """Bucket name of the default bucket for the project."""
         if not self.project_id:
             return None
         return self.project_id + '.appspot.com'
 
     def list(self, fields=None, maxResults=None, projection=None, prefix=None,
              pageToken=None):
+        """Retrieves a list of buckets for a given project.
+
+        The authenticated user in credentials must be a member of the
+        project's team.
+
+        Bucket list operations are eventually consistent.  This means that if
+        you create a bucket and then immediately perform a list operation,
+        the newly-created bucket will be immediately available for use, but
+        the bucket might not immediately appear in the returned list of
+        buckets.
+
+        :param fields: Limit retrieved data for each bucket to these fields.
+        :type fields: list of strings
+        :param maxResults: Maximum number of buckets to return.
+        :type maxResults: Unsigned integer
+        :param projection: Set of properties to return. Defaults to noAcl.
+                           Acceptable values are:
+                               "full": Include all properties.
+                               "noAcl": Omit the acl property.
+        :type projection: String
+        :param prefix: Filter results to buckets whose names begin with this
+                       prefix.
+        :type prefix: String
+        :param pageToken:  A previously-returned page token representing part
+                           of the larger set of results to view.  The pageToken
+                           is an encoded field representing the name and
+                           generation of the last bucket in the returned list.
+                           In a subsequent request using the pageToken, items
+                           that come after the pageToken are shown (up to
+                           maxResults).  Bucket list operations are eventually
+                           consistent. In addition, if you start a listing and
+                           then create a new bucket before using a pageToken to
+                           continue listing, you will not see the new bucket in
+                           subsequent listing results if it is in part of the
+                           bucket namespace already listed.
+        :type pageToken: String
+        :returns: List of buckets that match the criteria.
+        :rtype: List of gcs_client.Bucket.
+        """
         return self._list(project=self.project_id, fields=fields,
                           maxResults=maxResults, projection=projection,
                           prefix=prefix, pageToken=pageToken)
@@ -58,7 +104,54 @@ class Project(base.Listable):
                       predefined_acl=None,
                       predefined_default_obj_acl=None,
                       projection=gcs_projection.SIMPLE, **kwargs):
+        """Create a new bucket in the project.
 
+        Google Cloud Storage uses a flat namespace, so you can't create a
+        bucket with a name that is already in use.
+
+        For more information, see Bucket Naming Guidelines:
+        https://cloud.google.com/storage/docs/bucket-naming#requirements
+
+        The authenticated user in credentials must be a member of the project's
+        team as an editor or owner.
+
+        :param name: The name of the bucket.
+        :type name: String
+        :param location: The location of the bucket. Object data for objects in
+                         the bucket resides in physical storage within this
+                         region.  Defaults to US. See the developer's guide for
+                         the authoritative list:
+                         https://cloud.google.com/storage/docs/bucket-locations
+        :type location: String
+        :param storage_class: The bucket's storage class. This defines how
+                              objects in the bucket are stored and determines
+                              the SLA and the cost of storage.  Value must be
+                              one of gcs_client.constants.storage_class, and
+                              they include STANDARD, NEARLINE and
+                              DURABLE_REDUCED_AVAILABILITY.  Defaults to
+                              NEARLINE.
+        :type storage_class: String
+        :param predefined_acl: Apply a predefined set of access controls to
+                               this bucket.  Acceptable values from
+                               gcs_client.constants.acl are AUTH_READ, PRIVATE,
+                               PROJECT_PRIVATE, PUBLIC_R, and PUBLIC_RW
+        :type predefined_acl: String
+        :param predefined_default_obj_acl: Apply a predefined set of default
+                                           object access controls to this
+                                           bucket.  Acceptable values from
+                                           gcs_client.constants.acl are
+                                           AUTH_READ, OWNER_FULL, OWNER_READ,
+                                           PRIVATE, PROJECT_PRIVATE, and
+                                           PUBLIC_R
+        :type predefined_default_obj_acl: String
+        :param projection: Set of properties to return. Defaults to noAcl.
+                           Acceptable values are:
+                               "full": Include all properties.
+                               "noAcl": Omit the acl property.
+        :type projection: String
+        :returns: A new Bucket instance
+        :rtype: gcs_client.Bucket
+        """
         r = self._request(
             parse=True,
             op='POST',

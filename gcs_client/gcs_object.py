@@ -45,8 +45,23 @@ class Object(base.Fillable):
                  credentials=None, retry_params=None, chunksize=None):
         """Initialize an Object object.
 
-        :param name: Name of the bucket to use.
+        :param bucket: Name of the bucket to use.
+        :type bucket: String
+        :param name: Name of the object.
+        :type name: String
+        :param generation: If present, selects a specific revision of this
+                           object (as opposed to the latest version, the
+                           default).
+        :type generation: long
         :param credentials: A credentials object to authorize the connection.
+        :type credentials: gcs_client.Credentials
+        :param retry_params: Retry configuration used for communications with
+                             GCS.  If None is passed default retries will be
+                             used.
+        :type retry_params: RetryParams or NoneType
+        :param chunksize: Size in bytes of the payload to send/receive to/from
+                          GCS.  Default is gcs_client.DEFAULT_BLOCK_SIZE
+        :type chunksize: int
         """
         super(Object, self).__init__(credentials, retry_params)
         self.name = name
@@ -64,7 +79,37 @@ class Object(base.Fillable):
     def delete(self, generation=None, if_generation_match=None,
                if_generation_not_match=None, if_metageneration_match=None,
                if_metageneration_not_match=None):
+        """Deletes an object and its metadata.
 
+        Deletions are permanent if versioning is not enabled for the bucket, or
+        if the generation parameter is used.
+
+        The authenticated user in the credentials must have WRITER permissions
+        on the bucket.
+
+        :param generation: If present, permanently deletes a specific revision
+                           of this object (as opposed to the latest version,
+                           the default).
+        :type generation: long
+        :param if_generation_match: Makes the operation conditional on whether
+                                    the object's current generation matches the
+                                    given value.
+        :type if_generation_match: long
+        :param if_generation_not_match: Makes the operation conditional on
+                                        whether the object's current generation
+                                        does not match the given value.
+        :type if_generation_not_match: long
+        :param if_metageneration_match: Makes the operation conditional on
+                                        whether the object's current
+                                        metageneration matches the given value.
+        :type if_metageneration_match: long
+        :param if_metageneration_not_match: Makes the operation conditional on
+                                            whether the object's current
+                                            metageneration does not match the
+                                            given value.
+        :type if_metageneration_not_match: long
+        :returns: None
+        """
         self._request(op='DELETE', ok=(requests.codes.no_content,),
                       generation=generation or self.generation,
                       ifGenerationMatch=if_generation_match,
@@ -74,6 +119,13 @@ class Object(base.Fillable):
 
     @common.is_complete
     def open(self, mode='r'):
+        """Open this object.
+
+        :param mode: Mode to open the file with, 'r' for read and 'w' for
+                     writing are only supported formats.  Default is 'r' if
+                     this argument is not provided.
+        :type mode: String
+        """
         return GCSObjFile(self.bucket, self.name, self._credentials, mode,
                           self._chunksize, self.retry_params, self.generation)
 
@@ -87,11 +139,51 @@ class Object(base.Fillable):
 
 
 class GCSObjFile(object):
+    """Reader/Writer for GCS Objects.
+
+    Supports basic functionality:
+        - Read
+        - Write
+        - Close
+        - Seek
+        - Tell
+
+    Instances support context manager behavior.
+    """
+
     URL = 'https://www.googleapis.com/storage/v1/b/%s/o/%s'
     URL_UPLOAD = 'https://www.googleapis.com/upload/storage/v1/b/%s/o'
 
     def __init__(self, bucket, name, credentials, mode='r', chunksize=None,
                  retry_params=None, generation=None):
+        """Initialize reader/writer of GCS object.
+
+        On initialization connection to GCS will be tested.  For reading it'll
+        confirm the existence of the object in the bucket and for writing it'll
+        create the object (it won't send any content).
+
+        :param bucket: Name of the bucket to use.
+        :type bucket: String
+        :param name: Name of the object.
+        :type name: String
+        :param credentials: A credentials object to authorize the connection.
+        :type credentials: gcs_client.Credentials
+        :param mode: Mode to open the file with, 'r' for read and 'w' for
+                     writing are only supported formats.  Default is 'r' if
+                     this argument is not provided.
+        :type mode: String
+        :param chunksize: Size in bytes of the payload to send/receive to/from
+                          GCS.  Default is gcs_client.DEFAULT_BLOCK_SIZE
+        :type chunksize: int
+        :param retry_params: Retry configuration used for communications with
+                             GCS.  If None is passed default retries will be
+                             used.
+        :type retry_params: RetryParams or NoneType
+        :param generation: If present, selects a specific revision of this
+                           object (as opposed to the latest version, the
+                           default).
+        :type generation: long
+        """
         if mode not in ('r', 'w'):
             raise IOError('Only r or w modes supported')
         self.mode = mode
@@ -166,10 +258,24 @@ class GCSObjFile(object):
         self.closed = False
 
     def tell(self):
+        """Return file's current position from the beginning of the file."""
         self._check_is_open()
         return self._offset
 
     def seek(self, offset, whence=os.SEEK_SET):
+        """Set the file's current position, like stdio's fseek().
+
+        Note that only files open for reading are seekable.
+
+        :param offset: Offset to move the file cursor.
+        :type offset: int
+        :param whence: How to interpret the offset, defaults to os.SEEK_SET (0)
+                       -absolute file positioning- other values are os.SEEK_CUR
+                       (1) -seek relative to the current position- and
+                       os.SEEK_END (2) -seek relative to the file's end-.
+        :type whence: int
+        :returns: None
+        """
         self._check_is_open()
         self._check_is_readable('seek')
 
@@ -190,6 +296,16 @@ class GCSObjFile(object):
         self._buffer.clear()
 
     def write(self, data):
+        """Write a string to the file.
+
+        Due to buffering, the string may not actually show up in the file until
+        we close the file or enough data to send another chunk has been
+        buffered.
+
+        :param data: Data to write to the object.
+        :type data: String
+        :returns: None
+        """
         self._check_is_open()
         self._check_is_writable()
 
@@ -230,6 +346,12 @@ class GCSObjFile(object):
                 (self.name, self.bucket, r.status_code, r.content))
 
     def close(self):
+        """Close the file.
+
+        A closed file cannot be read or written any more. Any operation which
+        requires that the file be open will raise an error after the file has
+        been closed. Calling close() more than once is allowed.
+        """
         if not self.closed:
             if self._is_writable():
                 self._send_data(self._buffer.read(), self._gcs_offset,
@@ -237,6 +359,23 @@ class GCSObjFile(object):
             self.closed = True
 
     def read(self, size=None):
+        """Read data from the file.
+
+        Read at most size bytes from the file (less if the read hits EOF before
+        obtaining size bytes).  If the size argument is None, read all data
+        until EOF is reached.
+
+        The bytes are returned as a bytes object. An empty string is returned
+        when EOF is encountered immediately.
+
+        Note that this method may make multiple requests to GCS service in an
+        effort to acquire as close to size bytes as possible.
+
+        :param size: Number of bytes to read.
+        :type size: int
+        :returns: Bytes with read data from GCS.
+        :rtype: bytes
+        """
         self._check_is_open()
         self._check_is_readable()
 

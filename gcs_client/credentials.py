@@ -24,6 +24,8 @@ from gcs_client import errors
 
 
 class Credentials(oauth2_client.SignedJwtAssertionCredentials):
+    """GCS Credentials used to access servers."""
+
     common_url = 'https://www.googleapis.com/auth/'
     scope_urls = {
         gcs_scope.READER: 'devstorage.read_only',
@@ -33,6 +35,44 @@ class Credentials(oauth2_client.SignedJwtAssertionCredentials):
     }
 
     def __init__(self, key_file_name, email=None, scope=gcs_scope.OWNER):
+        """Initialize credentials used for all GCS operations.
+
+        Create OAuth 2.0 credentials to access GCS from a JSON file or a P12
+        and email address.
+
+        Since this library is meant to work outside of Google App Engine and
+        Google Compute Engine, you must obtain these credential files in the
+        Google Developers Console.  To generate service-account credentials,
+        or to view the public credentials that you've already generated, do the
+        following:
+
+        1. Open the Credentials page.
+        2. To set up a new service account, do the following:
+
+           a. Click Add credentials > Service account.
+           b. Choose whether to download the service account's public/private
+              key as a JSON file (preferred) or standard P12 file.
+
+           Your new public/private key pair is generated and downloaded to your
+           machine; it serves as the only copy of this key. You are responsible
+           for storing it securely.
+
+        You can return to the Developers Console at any time to view the client
+        ID, email address, and public key fingerprints, or to generate
+        additional public/private key pairs. For more details about service
+        account credentials in the Developers Console, see Service accounts in
+        the Developers Console help file.
+
+        :param key_file_name: Name of the file with the credentials to use.
+        :type key_file_name: String
+        :param email: Service account's Email address to use with P12 file.
+                      When using JSON files this argument will be ignored.
+        :type email: String
+        :param scope: Scopes that the credentials should be granted access to.
+                      Value must be one of Credentials.scope_urls.keys()
+        :type scope: String
+
+        """
         if scope not in self.scope_urls:
             raise errors.Credentials('scope must be one of %s' %
                                      self.scope_urls.keys())

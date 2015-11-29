@@ -19,6 +19,13 @@ from gcs_client import base
 
 
 class Prefix(base.Listable):
+    """GCS Prefix Object representation.
+
+    Represents prefixes returned from listing objects inside a bucket using a
+    delimiter.
+
+    A Prefix object can be thought of as a directory in a filesystem.
+    """
 
     kind = 'storage#prefix'
     _required_attributes = base.GCS._required_attributes + ['name',
@@ -26,6 +33,21 @@ class Prefix(base.Listable):
 
     def __init__(self, name, prefix, delimiter=None, credentials=None,
                  retry_params=None):
+        """Initialize a prefix representation.
+
+        :param name: Name of the prefix (like the full path of a directory).
+        :type name: String
+        :param prefix: Prefix name
+        :type prefix: String
+        :param delimiter: Delimiter used on the listing
+        :type delimiter: String
+        :param credentials: A credentials object to authorize the connection.
+        :type credentials: gcs_client.Credentials
+        :param retry_params: Retry configuration used for communications with
+                             GCS.  If None is passed default retries will be
+                             used.
+        :type retry_params: RetryParams or NoneType
+        """
         super(Prefix, self).__init__(credentials, retry_params)
         self.URL = '%s/%s/o' % (base.GCS.URL, name)
         self.name = name
@@ -34,6 +56,69 @@ class Prefix(base.Listable):
 
     def list(self, prefix=None, maxResults=None, versions=None, delimiter=None,
              projection=None, pageToken=None):
+        """List Objects matching the criteria contained in the Bucket.
+
+        In conjunction with the prefix filter, the use of the delimiter
+        parameter allows the list method to operate like a directory listing,
+        despite the object namespace being flat.  For example, if delimiter
+        were set to "/", then listing objects from a bucket that contains the
+        objects "a/b", "a/c", "d", "e", "e/f" would return objects "d" and "e",
+        and prefixes "a/" and "e/".
+
+        The authenticated user must have READER permissions on the bucket.
+
+        Object list operations are eventually consistent. This means that if
+        you upload an object to a bucket and then immediately perform a list
+        operation on the bucket in which the object is stored, the uploaded
+        object might not immediately appear in the returned list of objects.
+        However, you can always immediately download a newly-created object
+        and get its ACLs because object uploads are strongly consistent.
+
+        This differs slightly from bucket listing, because if no delimiter is
+        provided it will use the delimiter that was used on the listing that
+        generated the instance.  Likewise for the prefix.
+
+        :param prefix: Filter results to objects whose names begin with this
+                       prefix.  Default use prefix that was used to create
+                       this prefix.
+        :type prefix: String
+        :param maxResults: Maximum number of items plus prefixes to return.
+                           As duplicate prefixes are omitted, fewer total
+                           results may be returned than requested.  The default
+                           value of this parameter is 1,000 items.
+        :type maxResults: Unsigned integer
+        :param versions: If True, lists all versions of an object as distinct
+                         results.  The default is False.
+        :type versions: bool
+        :param delimiter: Returns results in a directory-like mode.  Objects
+                          whose names, aside from the prefix, do not contain
+                          delimiter with be returned as Object instances.
+                          Objects whose names, aside from the prefix, contain
+                          delimiter will be returned as Prefix instances.
+                          Duplicate prefixes are omitted.  Default use
+                          delimiter that was used to create this prefix.
+        :type delimiter: String
+        :param projection: Set of properties to return. Defaults to noAcl.
+                           Acceptable values are:
+                               "full": Include all properties.
+                               "noAcl": Omit the acl property.
+        :type projection: String
+        :param pageToken:  A previously-returned page token representing part
+                           of the larger set of results to view.  The pageToken
+                           is an encoded field representing the name and
+                           generation of the last object in the returned list.
+                           In a subsequent request using the pageToken, items
+                           that come after the pageToken are shown (up to
+                           maxResults).  Object list operations are eventually
+                           consistent. In addition, if you start a listing and
+                           then create an object in the bucket before using a
+                           pageToken to continue listing, you will not see the
+                           new object in subsequent listing results if it is in
+                           part of the object namespace already listed.
+        :type pageToken: String
+        :returns: List of objects and prefixes that match the criteria.
+        :rtype: List of gcs_client.Object and gcs_client.Prefix.
+        """
         if delimiter is None:
             delimiter = self.delimiter
         return self._list(_list_url=self.URL, prefix=prefix or self.prefix,

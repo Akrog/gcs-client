@@ -97,7 +97,7 @@ class GCS(object):
     def retry_params(self, retry_params):
         """Set retry configuration used by this instance for accessing GCS.
 
-        :param retry_params: retry configuration used for communications with
+        :param retry_params: Retry configuration used for communications with
                              GCS.  If None is passed retries will be disabled.
         :type retry_params: RetryParams or NoneType
         """
@@ -106,6 +106,7 @@ class GCS(object):
 
     @property
     def credentials(self):
+        """Credentials used to connect to GCS server."""
         return self._credentials
 
     @credentials.setter
@@ -117,6 +118,7 @@ class GCS(object):
     @common.is_complete
     @common.retry
     def exists(self):
+        """Check if exists in GCS server."""
         try:
             self._request(op='HEAD')
         except (gcs_errors.NotFound, gcs_errors.BadRequest):

@@ -63,12 +63,12 @@ class RetryParams(object):
     For example with default values of max_retries=5, initial_delay=1,
     max_backoff=32 and backoff_factor=2
 
-    1st failure: 1 second + random delay [ (2^(1-1)) * 1 ]
-    2nd failure: 2 seconds + random delay [ (2^(2-1)) * 1 ]
-    3rd failure: 4 seconds + random delay [ (2^(3-1)) * 1 ]
-    4th failure: 8 seconds + random delay [ (2^(4-1)) * 1 ]
-    5th failure: 16 seconds + random delay [ (2^(5-1)) * 1 ]
-    6th failure: Fail operation
+    - 1st failure: 1 second + random delay [ (2^(1-1)) * 1 ]
+    - 2nd failure: 2 seconds + random delay [ (2^(2-1)) * 1 ]
+    - 3rd failure: 4 seconds + random delay [ (2^(3-1)) * 1 ]
+    - 4th failure: 8 seconds + random delay [ (2^(4-1)) * 1 ]
+    - 5th failure: 16 seconds + random delay [ (2^(5-1)) * 1 ]
+    - 6th failure: Fail operation
     """
 
     def __init__(self, max_retries=5, initial_delay=1, max_backoff=32,
