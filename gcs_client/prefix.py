@@ -25,6 +25,19 @@ class Prefix(base.Listable):
     delimiter.
 
     A Prefix object can be thought of as a directory in a filesystem.
+
+    :ivar kind: The kind of item this is. For buckets, this is always
+                storage#prefix.
+    :vartype kind: string
+
+    :ivar name: Bucket name that this prefix belongs to.
+    :vartype name: string
+
+    :ivar prefix: Prefix name (like the full path of a directory).
+    :vartype prefix: string
+
+    :ivar delimiter: Delimiter used to generate this prefix.
+    :vartype delimiter: string
     """
 
     kind = 'storage#prefix'
@@ -35,9 +48,9 @@ class Prefix(base.Listable):
                  retry_params=None):
         """Initialize a prefix representation.
 
-        :param name: Name of the prefix (like the full path of a directory).
+        :param name: Name of the bucket this prefix belongs to.
         :type name: String
-        :param prefix: Prefix name
+        :param prefix: Prefix name (like the full path of a directory).
         :type prefix: String
         :param delimiter: Delimiter used on the listing
         :type delimiter: String
