@@ -23,7 +23,51 @@ from gcs_client import gcs_object
 
 
 class Bucket(base.Fillable, base.Listable):
-    """GCS Bucket Object representation."""
+    """GCS Bucket Object representation.
+
+    :ivar kind: The kind of item this is. For buckets, this is always
+                storage#bucket.
+    :vartype kind: string
+
+    :ivar name: The name of the bucket.
+    :vartype name: string
+
+    :ivar timeCreated: The creation time of the bucket in RFC 3339 format.
+    :vartype timeCreated: string
+
+    :ivar updated: The modification time of the bucket in RFC 3339 format.
+    :vartype updated: string
+
+    :ivar id: The ID of the bucket.
+    :vartype id: string
+
+    :ivar metageneration: The metadata generation of this bucket.
+    :vartype metageneration: long
+
+    :ivar location: The location of the bucket. Object data for objects in the
+                    bucket resides in physical storage within this region.
+                    Defaults to US. See the developer's guide for the
+                    authoritative list:
+                    https://cloud.google.com/storage/docs/bucket-locations
+    :vartype location: string
+
+    :ivar owner: The owner of the object.  This will always be the uploader of
+                 the object.  Contains entity and entityId keys.
+    :vartype owner: dict
+
+    :ivar etag: HTTP 1.1 Entity tag for the object.
+    :vartype etag: string
+
+    :ivar projectNumber: The project number of the project the bucket belongs
+                         to.
+    :vartype projectNumber: long
+
+    :ivar selfLink: The link to this object.
+    :vartype selfLink: string
+
+    :ivar storageClass: Storage class of the object.
+    :vartype storageClass: string
+    """
 
     kind = 'storage#buckets'
     _required_attributes = base.GCS._required_attributes + ['name']
