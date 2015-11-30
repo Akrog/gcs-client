@@ -67,7 +67,7 @@ class Prefix(base.Listable):
         self.prefix = prefix
         self.delimiter = delimiter
 
-    def list(self, prefix=None, maxResults=None, versions=None, delimiter=None,
+    def list(self, prefix='', maxResults=None, versions=None, delimiter=None,
              projection=None, pageToken=None):
         """List Objects matching the criteria contained in the Bucket.
 
@@ -91,9 +91,9 @@ class Prefix(base.Listable):
         provided it will use the delimiter that was used on the listing that
         generated the instance.  Likewise for the prefix.
 
-        :param prefix: Filter results to objects whose names begin with this
-                       prefix.  Default use prefix that was used to create
-                       this prefix.
+        :param prefix: Filter results in this 'directory' to objects whose
+                       names begin with this prefix.  Default is to list all
+                       objects in the directory.
         :type prefix: String
         :param maxResults: Maximum number of items plus prefixes to return.
                            As duplicate prefixes are omitted, fewer total
@@ -134,7 +134,7 @@ class Prefix(base.Listable):
         """
         if delimiter is None:
             delimiter = self.delimiter
-        return self._list(_list_url=self._URL, prefix=prefix or self.prefix,
+        return self._list(_list_url=self._URL, prefix=self.prefix + prefix,
                           maxResults=maxResults, versions=versions,
                           delimiter=delimiter,
                           projection=projection,

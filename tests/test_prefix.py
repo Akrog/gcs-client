@@ -78,7 +78,7 @@ class TestPrefix(unittest.TestCase):
     def test_list_defaults(self, mock_init, mock_list):
         """Test list method with default values."""
         name = 'bucket_name'
-        prefx = prefix.Prefix(name, mock.sentinel.prefix,
+        prefx = prefix.Prefix(name, 'var/',
                               mock.sentinel.delimiter,
                               mock.sentinel.credentials,
                               mock.sentinel.retry_params)
@@ -86,7 +86,7 @@ class TestPrefix(unittest.TestCase):
         self.assertEqual(mock.sentinel.list_result, prefx.list())
         mock_list.assert_called_once_with(
             _list_url='https://www.googleapis.com/storage/v1/b/bucket_name/o',
-            prefix=mock.sentinel.prefix, maxResults=None, versions=None,
+            prefix='var/', maxResults=None, versions=None,
             delimiter=mock.sentinel.delimiter, projection=None, pageToken=None)
 
     @mock.patch('gcs_client.base.Listable._list',
@@ -95,20 +95,20 @@ class TestPrefix(unittest.TestCase):
     def test_list(self, mock_init, mock_list):
         """Test list method with default values."""
         name = 'bucket_name'
-        prefx = prefix.Prefix(name, mock.sentinel.prefix,
+        prefx = prefix.Prefix(name, 'var/',
                               mock.sentinel.delimiter,
                               mock.sentinel.credentials,
                               mock.sentinel.retry_params)
 
         self.assertEqual(mock.sentinel.list_result,
-                         prefx.list(mock.sentinel.new_prefix,
+                         prefx.list('log/',
                                     mock.sentinel.max, mock.sentinel.version,
                                     mock.sentinel.new_delimiter,
                                     mock.sentinel.projection,
                                     mock.sentinel.page_token))
         mock_list.assert_called_once_with(
             _list_url='https://www.googleapis.com/storage/v1/b/bucket_name/o',
-            prefix=mock.sentinel.new_prefix, maxResults=mock.sentinel.max,
+            prefix='var/log/', maxResults=mock.sentinel.max,
             versions=mock.sentinel.version,
             delimiter=mock.sentinel.new_delimiter,
             projection=mock.sentinel.projection,
