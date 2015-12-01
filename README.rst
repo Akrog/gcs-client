@@ -15,6 +15,11 @@ GCS-Client
          :target: http://gcs-client.readthedocs.org/en/latest/?badge=latest
          :alt: Documentation Status
 
+.. image:: https://img.shields.io/pypi/pyversions/gcs-client.svg
+         :target: https://pypi.python.org/pypi/gcs-client
+
+.. image:: https://img.shields.io/:license-apache-blue.svg
+         :target: http://www.apache.org/licenses/LICENSE-2.0
 
 Google Cloud Storage Python Client
 
