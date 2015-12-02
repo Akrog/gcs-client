@@ -44,9 +44,6 @@ class TestPrefix(unittest.TestCase):
         mock_init.assert_called_once_with(mock.sentinel.credentials,
                                           mock.sentinel.retry_params)
 
-        self.assertEqual(
-            'https://www.googleapis.com/storage/v1/b/bucket_name/o',
-            prefx._URL)
         self.assertEqual(name, prefx.name)
         self.assertEqual(mock.sentinel.prefix, prefx.prefix)
         self.assertEqual(mock.sentinel.delimiter, prefx.delimiter)
@@ -85,7 +82,6 @@ class TestPrefix(unittest.TestCase):
 
         self.assertEqual(mock.sentinel.list_result, prefx.list())
         mock_list.assert_called_once_with(
-            _list_url='https://www.googleapis.com/storage/v1/b/bucket_name/o',
             prefix='var/', maxResults=None, versions=None,
             delimiter=mock.sentinel.delimiter, projection=None, pageToken=None)
 
@@ -107,7 +103,6 @@ class TestPrefix(unittest.TestCase):
                                     mock.sentinel.projection,
                                     mock.sentinel.page_token))
         mock_list.assert_called_once_with(
-            _list_url='https://www.googleapis.com/storage/v1/b/bucket_name/o',
             prefix='var/log/', maxResults=mock.sentinel.max,
             versions=mock.sentinel.version,
             delimiter=mock.sentinel.new_delimiter,

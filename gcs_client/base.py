@@ -67,10 +67,11 @@ class GCS(object):
         headers['Authorization'] = self._credentials.authorization
 
         if not url:
-            format_args = tuple(requests.utils.quote(getattr(self, x), safe='')
-                                for x in self._required_attributes
-                                if x not in GCS._required_attributes)
-            url = self._URL % format_args
+            format_args = {
+                x: requests.utils.quote(six.text_type(getattr(self, x)),
+                                        safe='')
+                for x in self._required_attributes}
+            url = self._URL.format(**format_args)
         r = requests.request(op, url, params=params, headers=headers,
                              json=body)
 
@@ -220,8 +221,7 @@ class Listable(GCS):
 
     list = _list
 
-    def _list_url(self):
-        raise NotImplementedError
+    _list_url = None
 
 
 def all_subclasses(cls):

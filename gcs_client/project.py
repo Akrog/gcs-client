@@ -25,7 +25,7 @@ class Project(base.Listable):
     """GCS Project Object representation."""
 
     _required_attributes = base.GCS._required_attributes + ['project_id']
-    _URL = base.Fillable._URL + '?project=%s'
+    _URL = base.Fillable._URL + '?project={project_id}'
     _list_url = base.Fillable._URL
 
     def __init__(self, project_id, credentials=None, retry_params=None):

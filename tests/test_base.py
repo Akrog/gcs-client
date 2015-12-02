@@ -91,7 +91,7 @@ class TestGCS(unittest.TestCase):
         request_mock.assert_called_once_with(
             'GET', self.test_class._URL, params={},
             headers={'Authorization': creds.authorization}, json=None)
-        self.assertFalse(quote_mock.called)
+        self.assertEqual(1, quote_mock.call_count)
         self.assertFalse(request_mock.return_value.json.called)
 
     @mock.patch('requests.request', **{'return_value.status_code': 200})
@@ -103,7 +103,7 @@ class TestGCS(unittest.TestCase):
         setattr(gcs, 'size', 123)
         quote_mock.return_value = 123
         gcs._required_attributes = list(gcs._required_attributes) + ['size']
-        gcs._URL = 'url_%s'
+        gcs._URL = 'url_{size}'
         self.assertEqual(request_mock.return_value, gcs._request())
         request_mock.assert_called_once_with(
             'GET', 'url_123', params={},
@@ -121,7 +121,7 @@ class TestGCS(unittest.TestCase):
         request_mock.assert_called_once_with(
             'GET', self.test_class._URL, params={},
             headers={'Authorization': creds.authorization}, json=None)
-        self.assertFalse(utils_mock.quote.called)
+        self.assertEqual(1, utils_mock.quote.call_count)
         self.assertFalse(request_mock.return_value.json.called)
 
     @mock.patch('requests.request', **{'return_value.status_code': 203})
@@ -139,7 +139,7 @@ class TestGCS(unittest.TestCase):
             params={'param1': mock.sentinel.param1},
             headers={'Authorization': creds.authorization, 'head': 'hello'},
             json=mock.sentinel.body)
-        self.assertFalse(quote_mock.called)
+        self.assertEqual(1, quote_mock.call_count)
         self.assertTrue(request_mock.return_value.json.called)
 
     @mock.patch('requests.request', **{'return_value.status_code': 200})
@@ -153,7 +153,7 @@ class TestGCS(unittest.TestCase):
         request_mock.assert_called_once_with(
             'GET', self.test_class._URL, params={},
             headers={'Authorization': creds.authorization}, json=None)
-        self.assertFalse(quote_mock.called)
+        self.assertEqual(1, quote_mock.call_count)
         self.assertTrue(request_mock.return_value.json.called)
 
     @mock.patch('gcs_client.base.GCS._request')

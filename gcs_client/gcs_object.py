@@ -110,7 +110,7 @@ class Object(base.Fillable):
     timeDeleted = None
     metadata = {}
     _required_attributes = base.GCS._required_attributes + ['bucket', 'name']
-    _URL = base.Fillable._URL + '/%s/o/%s'
+    _URL = base.Fillable._URL + '/{bucket}/o/{name}'
 
     def __init__(self, bucket=None, name=None, generation=None,
                  credentials=None, retry_params=None, chunksize=None):
@@ -226,9 +226,8 @@ class GCSObjFile(object):
 
     Instances support context manager behavior.
     """
-
-    _URL = 'https://www.googleapis.com/storage/v1/b/%s/o/%s'
-    _URL_UPLOAD = 'https://www.googleapis.com/upload/storage/v1/b/%s/o'
+    _URL = base.Fillable._URL + '/%s/o/%s'
+    _URL_UPLOAD = base.Fillable._URL + '/%s/o'
 
     def __init__(self, bucket, name, credentials, mode='r', chunksize=None,
                  retry_params=None, generation=None):
