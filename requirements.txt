@@ -1,2 +1,2 @@
-oauth2client
-requests[security]
+oauth2client<2
+requests[security]<3
