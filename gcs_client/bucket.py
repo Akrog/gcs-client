@@ -72,6 +72,7 @@ class Bucket(base.Fillable, base.Listable):
     kind = 'storage#buckets'
     _required_attributes = base.GCS._required_attributes + ['name']
     _URL = base.Fillable._URL + '/{name}'
+    _list_url = base.Fillable._URL + '/{name}/o'
 
     def __init__(self, name=None, credentials=None, retry_params=None):
         """Initialize a Bucket object.
@@ -152,11 +153,9 @@ class Bucket(base.Fillable, base.Listable):
         :returns: List of objects and prefixes that match the criteria.
         :rtype: List of gcs_client.Object and gcs_client.Prefix.
         """
-        return self._list(_list_url=self._URL.format(name=self.name) + '/o',
-                          prefix=prefix,
-                          maxResults=maxResults, versions=versions,
-                          delimiter=delimiter, projection=projection,
-                          pageToken=pageToken)
+        return self._list(prefix=prefix, maxResults=maxResults,
+                          versions=versions, delimiter=delimiter,
+                          projection=projection, pageToken=pageToken)
 
     @common.retry
     def delete(self, if_metageneration_match=None,

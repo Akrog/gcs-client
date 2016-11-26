@@ -99,7 +99,7 @@ class TestBucket(unittest.TestCase):
 
         self.assertListEqual(
             [mock.call(parse=True,
-                       url='https://www.googleapis.com/storage/v1/b/name/o',
+                       url='https://www.googleapis.com/storage/v1/b/{name}/o',
                        prefix=mock.sentinel.prefix,
                        maxResults=mock.sentinel.max_results,
                        versions=mock.sentinel.version,
@@ -107,7 +107,7 @@ class TestBucket(unittest.TestCase):
                        projection=mock.sentinel.projection,
                        pageToken=mock.sentinel.page_token),
              mock.call(parse=True,
-                       url='https://www.googleapis.com/storage/v1/b/name/o',
+                       url='https://www.googleapis.com/storage/v1/b/{name}/o',
                        prefix=mock.sentinel.prefix,
                        maxResults=mock.sentinel.max_results,
                        versions=mock.sentinel.version,
