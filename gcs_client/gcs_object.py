@@ -227,7 +227,7 @@ class GCSObjFile(object):
     Instances support context manager behavior.
     """
     _URL = base.Fillable._URL + '/%s/o/%s'
-    _URL_UPLOAD = base.Fillable._URL + '/%s/o'
+    _URL_UPLOAD = base.Fillable._URL_UPLOAD + '/%s/o'
 
     def __init__(self, bucket, name, credentials, mode='r', chunksize=None,
                  retry_params=None, generation=None):
@@ -465,7 +465,7 @@ class GCSObjFile(object):
 
         data = self._buffer.read(size)
         self._offset += len(data)
-        return bytes(data)
+        return data.tobytes()
 
     @common.retry
     def _get_data(self, size, begin=0):
@@ -547,4 +547,4 @@ class _Buffer(object):
             remaining -= len(data)
 
         self._size -= size
-        return result
+        return memoryview(result)

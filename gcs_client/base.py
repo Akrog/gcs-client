@@ -28,6 +28,7 @@ class GCS(object):
     _required_attributes = ['credentials']
 
     _URL = 'https://www.googleapis.com/storage/v1/b'
+    _URL_UPLOAD = 'https://www.googleapis.com/upload/storage/v1/b'
 
     def __init__(self, credentials, retry_params=None):
         """Base GCS initialization.
