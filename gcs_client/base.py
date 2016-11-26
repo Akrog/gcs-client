@@ -44,7 +44,7 @@ class GCS(object):
         self._retry_params = retry_params or common.RetryParams.get_default()
 
     def _request(self, op='GET', headers=None, body=None, parse=False,
-                 ok=(requests.codes.ok,), url=None, **params):
+                 ok=(requests.codes.ok,), url=None, format_url=True, **params):
         """Request actions on a GCS resource.
 
         :param op: Operation to perform (GET, PUT, POST, HEAD, DELETE).
@@ -60,6 +60,8 @@ class GCS(object):
         :type ok: Iterable of integer numbers
         :param url: Alternative url to use
         :type url: six.string_types
+        :param format_url: If we want provided url to be formatted with params
+        :type format_url: bool
         :param params: All params to send as URL params in the request.
         :returns: requests.Request
         :"""
@@ -67,11 +69,15 @@ class GCS(object):
         headers['Authorization'] = self._credentials.authorization
 
         if not url:
+            url = self._URL
+
+        if format_url:
             format_args = {
                 x: requests.utils.quote(six.text_type(getattr(self, x)),
                                         safe='')
                 for x in self._required_attributes}
-            url = self._URL.format(**format_args)
+            url = url.format(**format_args)
+
         r = requests.request(op, url, params=params, headers=headers,
                              json=body)
 

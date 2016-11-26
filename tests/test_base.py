@@ -94,21 +94,67 @@ class TestGCS(unittest.TestCase):
         self.assertEqual(1, quote_mock.call_count)
         self.assertFalse(request_mock.return_value.json.called)
 
+    def _request_setup_gcs(self, url):
+        self.creds = mock.Mock()
+        gcs = self.test_class(self.creds)
+        setattr(gcs, 'size', 123)
+        gcs._required_attributes = ['size']
+        gcs._URL = url
+        return gcs
+
     @mock.patch('requests.request', **{'return_value.status_code': 200})
     @mock.patch('requests.utils.quote')
     def test_request_default_ok_url_params(self, quote_mock, request_mock):
         """Test _request method with default values."""
-        creds = mock.Mock()
-        gcs = self.test_class(creds)
-        setattr(gcs, 'size', 123)
-        quote_mock.return_value = 123
-        gcs._required_attributes = list(gcs._required_attributes) + ['size']
-        gcs._URL = 'url_{size}'
+        quote_mock.side_effect = lambda s, *args, **kwargs: s
+        gcs = self._request_setup_gcs('url_{size}')
+
         self.assertEqual(request_mock.return_value, gcs._request())
         request_mock.assert_called_once_with(
             'GET', 'url_123', params={},
-            headers={'Authorization': creds.authorization}, json=None)
-        self.assertTrue(quote_mock.called)
+            headers={'Authorization': self.creds.authorization}, json=None)
+        quote_mock.assert_called_once_with('123', safe='')
+        self.assertFalse(request_mock.return_value.json.called)
+
+    @mock.patch('requests.request', **{'return_value.status_code': 200})
+    def test_request_url_without_params(self, request_mock):
+        """Test _request method with an url that has no parameters."""
+        url = 'url_456'
+        gcs = self._request_setup_gcs(url)
+
+        self.assertEqual(request_mock.return_value, gcs._request())
+        request_mock.assert_called_once_with(
+            'GET', url, params={},
+            headers={'Authorization': self.creds.authorization}, json=None)
+        self.assertFalse(request_mock.return_value.json.called)
+
+    @mock.patch('requests.request', **{'return_value.status_code': 200})
+    def test_request_url_with_params(self, request_mock):
+        """Test _request method with an url that has parameters."""
+        url = 'url_{nosize}'
+        gcs = self._request_setup_gcs(url)
+        setattr(gcs, 'nosize', 456)
+        gcs._required_attributes += ['nosize']
+
+        self.assertEqual(request_mock.return_value, gcs._request(url=url))
+        request_mock.assert_called_once_with(
+            'GET', 'url_456', params={},
+            headers={'Authorization': self.creds.authorization}, json=None)
+        self.assertFalse(request_mock.return_value.json.called)
+
+    @mock.patch('requests.request', **{'return_value.status_code': 200})
+    @mock.patch('requests.utils.quote')
+    def test_request_url_no_formatting(self, quote_mock, request_mock):
+        """Test _request method with an url and forcing no formatting."""
+        url = 'url_{nosize}'
+        gcs = self._request_setup_gcs(url)
+
+        result = gcs._request(url=url, format_url=False)
+        self.assertEqual(request_mock.return_value, result)
+        request_mock.assert_called_once_with(
+            'GET', url, params={},
+            headers={'Authorization': self.creds.authorization}, json=None)
+        quote_mock.assert_not_called()
         self.assertFalse(request_mock.return_value.json.called)
 
     @mock.patch('requests.request', **{'return_value.status_code': 404})
