@@ -15,9 +15,6 @@
 
 from __future__ import absolute_import
 
-__all__ = ('BLOCK_MULTIPLE', 'DEFAULT_BLOCK_SIZE', 'Object', 'GCSObjFile')
-
-
 import collections
 import json
 import os
@@ -28,6 +25,9 @@ import requests
 from gcs_client import base
 from gcs_client import common
 from gcs_client import errors
+
+
+__all__ = ('BLOCK_MULTIPLE', 'DEFAULT_BLOCK_SIZE', 'Object', 'GCSObjFile')
 
 
 BLOCK_MULTIPLE = 256 * 1024

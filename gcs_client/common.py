@@ -185,8 +185,8 @@ def retry(param='_retry_params', error_codes=DEFAULT_RETRY_CODES):
                 n += 1
                 # If we haven't reached maximum backoff yet calculate new delay
                 if delay < retry_params.max_backoff:
-                    backoff = (math.pow(retry_params.backoff_factor, n-1)
-                               * retry_params.initial_delay)
+                    backoff = (math.pow(retry_params.backoff_factor, n-1) *
+                               retry_params.initial_delay)
                     delay = min(retry_params.max_backoff, backoff)
 
                 if retry_params.randomize:
