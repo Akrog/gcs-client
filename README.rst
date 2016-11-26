@@ -76,11 +76,12 @@ Once you have the credentials you can start using gcs_client to access your proj
 
     # Print buckets in the project
     buckets = project.list()
-    print 'Buckets:\n\t- ','\n\t- '.join(map(str, buckets))
+    print 'Buckets:\n\t-', '\n\t- '.join(map(str, buckets))
 
     # Print some information from first bucket
     bucket = buckets[0]
-    print 'Bucket %s is located in %s with storage class %s' % (bucket, bucket.location, bucket.storageClass)
+    print 'Bucket %s is located in %s with storage class %s' % (bucket, bucket.location,
+                                                                bucket.storageClass)
 
     # List the objects in the bucket
     objects = bucket.list()
@@ -92,7 +93,7 @@ Once you have the credentials you can start using gcs_client to access your proj
         objects = [gcs_client.Object(bucket.name, filename, credentials=credentials)]
 
     if objects:
-        print '\t','\n\t'.join(map(lambda o: o.name + ' has %s bytes' % o.size, objects))
+        print '\t', '\n\t'.join(map(lambda o: o.name + ' has %s bytes' % o.size, objects))
         # Read the contents from the first file
         with objects[0].open() as obj:
             print 'Contents of file %s are:\n' % obj.name, obj.read()

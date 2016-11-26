@@ -40,7 +40,8 @@ Creating a bucket
     project = gcs_client.Project(project_name, credentials)
 
     bucket = project.create_bucket('my_new_bucket', location='EU')
-    print 'Bucket %s is located in %s with storage class %s' % (bucket, bucket.location, bucket.storageClass)
+    print 'Bucket %s is located in %s with storage class %s' % (bucket, bucket.location,
+                                                                bucket.storageClass)
 
 
 Deleting a bucket
@@ -114,7 +115,7 @@ optional argument on the ``list`` call.
 
 Following example implements ``tree`` command for a bucket.
 
-This is just for demonstration purposes, since it is not efficient because for 
+This is just for demonstration purposes, since it is not efficient because for
 each "directory" we find we make another request to the server to list its
 contents.  It would be more efficient to request all the objects in one go
 and then rebuild the tree locally.
@@ -236,11 +237,13 @@ All operations use retries with Truncated Exponential Backoff by default, but we
     import gcs_client
 
     # Set default retry configuration using a RetryParams instance
-    new_retry_cfg = gcs_client.RetryParams(max_retries=10, initial_delay=0.5, max_backoff=8, randomize=False)
+    new_retry_cfg = gcs_client.RetryParams(max_retries=10, initial_delay=0.5, max_backoff=8,
+                                           randomize=False)
     gcs_client.RetryParams.set_default(new_retry_cfg)
 
     # Set default retry configuration via params
-    gcs_client.RetryParams.set_default(max_retries=10, initial_delay=0.5, max_backoff=8, randomize=False)
+    gcs_client.RetryParams.set_default(max_retries=10, initial_delay=0.5, max_backoff=8,
+                                       randomize=False)
 
 
 Disabling default retries
@@ -273,7 +276,8 @@ We can set specific retry configuration for an instance.  Important to notice th
 
     bucket = project.list()[0]
     # Set bucket retry configuration
-    bucket.retry_params = gcs_client.RetryParams(max_retries=10, initial_delay=0.5, max_backoff=8, randomize=False)
+    bucket.retry_params = gcs_client.RetryParams(max_retries=10, initial_delay=0.5, max_backoff=8,
+                                                 randomize=False)
 
     # Disable retries on the bucket
     bucket.retry_params = None
