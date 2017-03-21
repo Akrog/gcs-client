@@ -320,7 +320,7 @@ class GCSObjFile(object):
             initial_url = self._URL_UPLOAD % safe_bucket
             params = {'uploadType': 'resumable', 'name': self.name}
             headers = {'x-goog-resumable': 'start',
-                       'Authorization': self._credentials.authorization,
+                       'Authorization': 'Bearer ' +  self.credentials.get_access_token().access_token,
                        'Content-type': 'application/octet-stream'}
             r = requests.post(initial_url, params=params, headers=headers)
             if r.status_code == requests.codes.ok:
@@ -406,7 +406,7 @@ class GCSObjFile(object):
             size = self.size if finalize else '*'
             data_range = 'bytes %s-%s/%s' % (begin, end, size)
 
-        headers = {'Authorization': self._credentials.authorization,
+        headers = {'Authorization': 'Bearer ' +  self.credentials.get_access_token().access_token,
                    'Content-Range': data_range}
         r = requests.put(self._location, data=data, headers=headers)
 
@@ -473,7 +473,7 @@ class GCSObjFile(object):
             return ''
 
         end = begin + size - 1
-        headers = {'Authorization': self._credentials.authorization,
+        headers = {'Authorization': 'Bearer ' +  self.credentials.get_access_token().access_token,
                    'Range': 'bytes=%d-%d' % (begin, end)}
         params = {'alt': 'media'}
         r = requests.get(self._location, params=params, headers=headers)
