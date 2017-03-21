@@ -324,7 +324,7 @@ class GCSObjFile(object):
             params = {'uploadType': 'resumable', 'name': self.name}
             headers = {
                 'x-goog-resumable': 'start',
-                'Authorization': 
+                'Authorization':
                 'Bearer ' + self.credentials.get_access_token().access_token,
                 'Content-type': 'application/octet-stream'
                 }
@@ -414,8 +414,8 @@ class GCSObjFile(object):
 
         headers = {
             'Authorization':
-             'Bearer ' + self.credentials.get_access_token().access_token,
-             'Content-Range': data_range
+            'Bearer ' + self.credentials.get_access_token().access_token,
+            'Content-Range': data_range
             }
         r = requests.put(self._location, data=data, headers=headers)
 
@@ -485,7 +485,7 @@ class GCSObjFile(object):
         headers = {
             'Authorization':
             'Bearer ' + self.credentials.get_access_token().access_token,
-             'Range': 'bytes=%d-%d' % (begin, end)
+            'Range': 'bytes=%d-%d' % (begin, end)
         }
         params = {'alt': 'media'}
         r = requests.get(self._location, params=params, headers=headers)
