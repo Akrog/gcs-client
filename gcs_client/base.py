@@ -137,7 +137,7 @@ class Fillable(GCS):
         super(Fillable, self).__setattr__('_gcs_attrs', {})
         # We need to set a default value for _credentials, otherwise we would
         # end up calling __get_attr__ on GCS base class
-        self._credentials = not credentials
+        self.credentials = credentials
         super(Fillable, self).__init__(credentials, retry_params)
         self._data_retrieved = False
         self._exists = None
