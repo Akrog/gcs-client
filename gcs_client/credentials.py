@@ -29,10 +29,10 @@ class Credentials(ServiceAccountCredentials):
 
     common_url = 'https://www.googleapis.com/auth/'
     scope_urls = {
-        constants.SCOPE_READER: 'devstorage.read_only',
-        constants.SCOPE_WRITER: 'devstorage.read_write',
-        constants.SCOPE_OWNER: 'devstorage.full_control',
-        constants.SCOPE_CLOUD: 'cloud-platform',
+        constants.SCOPE_READER: 'https://www.googleapis.com/auth/devstorage.read_only',
+        constants.SCOPE_WRITER: 'https://www.googleapis.com/auth/devstorage.read_write',
+        constants.SCOPE_OWNER: 'https://www.googleapis.com/auth/devstorage.full_control',
+        constants.SCOPE_CLOUD: 'https://www.googleapis.com/auth/cloud-platform',
     }
 
     def __init__(self, key_file_name, email=None, scope=constants.SCOPE_OWNER):
