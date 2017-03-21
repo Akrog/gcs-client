@@ -201,7 +201,7 @@ class Object(base.Fillable):
                           object's initialization.
         :type chunksize: int
         """
-        return GCSObjFile(self.bucket, self.name, self._credentials, mode,
+        return GCSObjFile(self.bucket, self.name, self.credentials, mode,
                           chunksize or self._chunksize, self.retry_params,
                           self.generation)
 
