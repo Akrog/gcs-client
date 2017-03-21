@@ -22,8 +22,9 @@ from oauth2client import client as oauth2_client
 from gcs_client import constants
 from gcs_client import errors
 
+from oauth2client.service_account import ServiceAccountCredentials
 
-class Credentials(oauth2_client.SignedJwtAssertionCredentials):
+class Credentials(ServiceAccountCredentials):
     """GCS Credentials used to access servers."""
 
     common_url = 'https://www.googleapis.com/auth/'
