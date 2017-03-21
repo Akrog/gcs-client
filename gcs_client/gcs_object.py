@@ -271,7 +271,7 @@ class GCSObjFile(object):
         self._offset = 0
         self._eof = False
         self._gcs_offset = 0
-        self._credentials = credentials
+        self.credentials = credentials
         self._buffer = _Buffer()
         self._retry_params = retry_params
         self._generation = generation
@@ -307,7 +307,7 @@ class GCSObjFile(object):
         if self._is_readable():
             self._location = self._URL % (safe_bucket, safe_name)
             params = {'fields': 'size', 'generation': self._generation}
-            headers = {'Authorization': self._credentials.authorization}
+            headers = {'Authorization': 'Bearer ' +  self.credentials.get_access_token().access_token}
             r = requests.get(self._location, params=params, headers=headers)
             if r.status_code == requests.codes.ok:
                 try:
