@@ -67,7 +67,7 @@ class GCS(object):
         :returns: requests.Request
         :"""
         headers = {} if not headers else headers.copy()
-        headers['Authorization'] = 
+        headers['Authorization'] =\
             'Bearer ' + self.credentials.get_access_token().access_token
 
         if not url:
