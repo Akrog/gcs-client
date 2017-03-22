@@ -36,9 +36,9 @@ class TestGcs_client(unittest.TestCase):
         from gcs_client import project
         self.assertIs(project.Project, gcs_client.Project)
 
-    def test_credentials_accessible(self):
-        from gcs_client import credentials
-        self.assertIs(credentials.Credentials, gcs_client.Credentials)
+#     def test_credentials_accessible(self):
+#         from gcs_client import credentials
+#         self.assertIs(credentials.Credentials, gcs_client.Credentials)
 
     def test_object_accessible(self):
         from gcs_client import gcs_object

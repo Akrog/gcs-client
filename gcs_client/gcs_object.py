@@ -201,7 +201,7 @@ class Object(base.Fillable):
                           object's initialization.
         :type chunksize: int
         """
-        return GCSObjFile(self.bucket, self.name, self._credentials, mode,
+        return GCSObjFile(self.bucket, self.name, self.credentials, mode,
                           chunksize or self._chunksize, self.retry_params,
                           self.generation)
 
@@ -271,7 +271,7 @@ class GCSObjFile(object):
         self._offset = 0
         self._eof = False
         self._gcs_offset = 0
-        self._credentials = credentials
+        self.credentials = credentials
         self._buffer = _Buffer()
         self._retry_params = retry_params
         self._generation = generation
@@ -307,7 +307,10 @@ class GCSObjFile(object):
         if self._is_readable():
             self._location = self._URL % (safe_bucket, safe_name)
             params = {'fields': 'size', 'generation': self._generation}
-            headers = {'Authorization': self._credentials.authorization}
+            headers = {
+                'Authorization':
+                'Bearer ' + self.credentials.get_access_token().access_token
+                }
             r = requests.get(self._location, params=params, headers=headers)
             if r.status_code == requests.codes.ok:
                 try:
@@ -319,9 +322,12 @@ class GCSObjFile(object):
             self.size = 0
             initial_url = self._URL_UPLOAD % safe_bucket
             params = {'uploadType': 'resumable', 'name': self.name}
-            headers = {'x-goog-resumable': 'start',
-                       'Authorization': self._credentials.authorization,
-                       'Content-type': 'application/octet-stream'}
+            headers = {
+                'x-goog-resumable': 'start',
+                'Authorization':
+                'Bearer ' + self.credentials.get_access_token().access_token,
+                'Content-type': 'application/octet-stream'
+                }
             r = requests.post(initial_url, params=params, headers=headers)
             if r.status_code == requests.codes.ok:
                 self._location = r.headers['Location']
@@ -406,8 +412,11 @@ class GCSObjFile(object):
             size = self.size if finalize else '*'
             data_range = 'bytes %s-%s/%s' % (begin, end, size)
 
-        headers = {'Authorization': self._credentials.authorization,
-                   'Content-Range': data_range}
+        headers = {
+            'Authorization':
+            'Bearer ' + self.credentials.get_access_token().access_token,
+            'Content-Range': data_range
+            }
         r = requests.put(self._location, data=data, headers=headers)
 
         if size == '*':
@@ -473,8 +482,11 @@ class GCSObjFile(object):
             return ''
 
         end = begin + size - 1
-        headers = {'Authorization': self._credentials.authorization,
-                   'Range': 'bytes=%d-%d' % (begin, end)}
+        headers = {
+            'Authorization':
+            'Bearer ' + self.credentials.get_access_token().access_token,
+            'Range': 'bytes=%d-%d' % (begin, end)
+        }
         params = {'alt': 'media'}
         r = requests.get(self._location, params=params, headers=headers)
         expected = (requests.codes.ok, requests.codes.partial_content,

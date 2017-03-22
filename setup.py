@@ -15,7 +15,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read().replace('.. :changelog:', '')
 
 requirements = [
-    'oauth2client<2',
+    'oauth2client==4.0.0',
     'requests[security]<3'
 ]
 

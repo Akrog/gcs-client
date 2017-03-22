@@ -71,7 +71,10 @@ Once you have the credentials you can start using gcs_client to access your proj
 
     import gcs_client
 
-    credentials = gcs_client.Credentials('private_key.json')
+    from oauth2client.service_account import ServiceAccountCredentials
+    scopes = ['https://www.googleapis.com/auth/devstorage.full_control']
+    credentials = ServiceAccountCredentials.from_json_keyfile_name('key.json', scopes=scopes)
+
     project = gcs_client.Project('project_name', credentials)
 
     # Print buckets in the project

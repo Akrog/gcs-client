@@ -67,7 +67,8 @@ class GCS(object):
         :returns: requests.Request
         :"""
         headers = {} if not headers else headers.copy()
-        headers['Authorization'] = self._credentials.authorization
+        headers['Authorization'] =\
+            'Bearer ' + self.credentials.get_access_token().access_token
 
         if not url:
             url = self._URL
@@ -110,16 +111,16 @@ class GCS(object):
         assert isinstance(retry_params, (type(None), common.RetryParams))
         self._retry_params = retry_params
 
-    @property
-    def credentials(self):
-        """Credentials used to connect to GCS server."""
-        return self._credentials
+#     @property
+#     def credentials(self):
+#         """Credentials used to connect to GCS server."""
+#         return self._credentials
 
-    @credentials.setter
-    def credentials(self, value):
-        if value == getattr(self, '_credentials', not value):
-            return
-        self._credentials = value
+#     @credentials.setter
+#     def credentials(self, value):
+#         if value == getattr(self, '_credentials', not value):
+#             return
+#         self._credentials = value
 
     @common.is_complete
     @common.retry
@@ -137,7 +138,7 @@ class Fillable(GCS):
         super(Fillable, self).__setattr__('_gcs_attrs', {})
         # We need to set a default value for _credentials, otherwise we would
         # end up calling __get_attr__ on GCS base class
-        self._credentials = not credentials
+        self.credentials = credentials
         super(Fillable, self).__init__(credentials, retry_params)
         self._data_retrieved = False
         self._exists = None
