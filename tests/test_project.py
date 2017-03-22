@@ -143,4 +143,3 @@ class TestProject(unittest.TestCase):
                     'projection': mock.sentinel.projection,
                     'predefinedDefaultObjectAcl': mock.sentinel.def_acl})
 
-#         obj_mock.assert_called_once_with(mock.sentinel.json_data, credentials)
