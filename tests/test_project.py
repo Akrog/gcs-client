@@ -142,4 +142,3 @@ class TestProject(unittest.TestCase):
             params={'predefinedAcl': mock.sentinel.acl,
                     'projection': mock.sentinel.projection,
                     'predefinedDefaultObjectAcl': mock.sentinel.def_acl})
-
